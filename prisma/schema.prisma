@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      String   // "superadmin", "partner", "cliente"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relación: un partner tiene muchos clientes
+  partnerId String?
+  partner   User?    @relation("PartnerClientes", fields: [partnerId], references: [id])
+  clientes  User[]   @relation("PartnerClientes")
+
+  // Relación con Cliente
+  clientesRecords Cliente[] @relation("UserClientes")
+}
+
+model Cliente {
+  id        Int      @id @default(autoincrement())
+  cliente   String
+  empresa   String?
+  email     String
+  telefono  String?
+  imagen    String?
+  estado    String
+  fechaAlta DateTime @default(now())
+  modulo    String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relación con User (partner)
+  partnerId String?
+  partner   User?    @relation("UserClientes", fields: [partnerId], references: [id])
+
+  // Relación con Partner
+  partnerRecordId Int?
+  partnerRecord   Partner? @relation(fields: [partnerRecordId], references: [id])
+}
+
+model Partner {
+  id        Int      @id @default(autoincrement())
+  partner   String
+  empresa   String?
+  email     String
+  telefono  String?
+  imagen    String?
+  estado    String
+  fechaAlta DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relación con Clientes
+  clientes Cliente[]
+}
+
+model Contacto {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  apellidos String?
+  email     String
+  telefono  String?
+  empresa   String?
+  estado    String
+  fechaCreacion DateTime @default(now())
+  origen    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
