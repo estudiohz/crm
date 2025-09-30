@@ -5,28 +5,31 @@ import { Icon } from '@iconify/react';
 import DashboardLayout from '../../../../components/DashboardLayout';
 import { useRouter, useParams } from 'next/navigation';
 
-// Valores iniciales del formulario (vacíos, se llenarán con datos del cliente)
+// Valores iniciales del formulario (vacíos, se llenarán con datos del cuenta)
 const initialFormData = {
   id: '',
-  cliente: '',
+  cuenta: '',
+  nombre: '',
+  apellidos: '',
   empresa: '',
   email: '',
   telefono: '',
   password: '',
   confirmPassword: '',
-  imagen: 'https://placehold.co/50x50/3b82f6/FFFFFF?text=CL',
+  imagen: 'https://placehold.co/50x50/3b82f6/FFFFFF?text=CU',
   estado: 'Activo',
   fechaAlta: '',
   modulo: [],
 };
 
-const EditClientePage = () => {
+const EditCuentaPage = () => {
   const [formData, setFormData] = useState(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [user, setUser] = useState(null);
+  const [emailError, setEmailError] = useState('');
   const router = useRouter();
   const params = useParams();
   const id = params.id;
@@ -41,38 +44,38 @@ const EditClientePage = () => {
   useEffect(() => {
     if (!user) return;
 
-    async function fetchCliente() {
+    async function fetchCuenta() {
       try {
-        const response = await fetch(`/api/clientes/${id}`);
+        const response = await fetch(`/api/cuentas/${id}`);
         if (!response.ok) {
-          throw new Error('No se pudo obtener el cliente');
+          throw new Error('No se pudo obtener el cuenta');
         }
-        const clienteData = await response.json();
+        const cuentaData = await response.json();
 
         // Check permissions
-        if (user.role !== 'superadmin' && clienteData.partnerRecordId !== user.partner?.id) {
-          router.push('/clientes');
+        if (user.role !== 'superadmin' && cuentaData.partnerRecordId !== user.partner?.id) {
+          router.push('/cuentas');
           return;
         }
 
         // Formatear fechaAlta para mostrar
-        const fecha = new Date(clienteData.fechaAlta);
+        const fecha = new Date(cuentaData.fechaAlta);
         const formattedFecha = fecha.toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
         setFormData({
-          ...clienteData,
+          ...cuentaData,
           fechaAlta: formattedFecha,
-          modulo: clienteData.modulo || [],
+          modulo: cuentaData.modulo || [],
         });
       } catch (error) {
-        console.error('Error fetching cliente:', error);
-        setMessage('Error al cargar el cliente.');
+        console.error('Error fetching cuenta:', error);
+        setMessage('Error al cargar el cuenta.');
       } finally {
         setLoading(false);
       }
     }
     if (id) {
-      fetchCliente();
+      fetchCuenta();
     }
   }, [id, user, router]);
 
@@ -82,6 +85,9 @@ const EditClientePage = () => {
       ...prevData,
       [name]: value,
     }));
+    if (name === 'email') {
+      setEmailError('');
+    }
   };
 
   const handleCheckboxChange = (e) => {
@@ -106,7 +112,7 @@ const EditClientePage = () => {
     }
 
     try {
-      const response = await fetch('/api/clientes', {
+      const response = await fetch('/api/cuentas', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -115,38 +121,44 @@ const EditClientePage = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Error al actualizar el cliente');
+        const errorData = await response.json();
+        if (response.status === 400 && errorData.message.includes('email')) {
+          setEmailError(errorData.message);
+          setIsSubmitting(false);
+          return;
+        }
+        throw new Error(errorData.message || 'Error al actualizar el cuenta');
       }
 
-      const updatedCliente = await response.json();
-      console.log('Cliente actualizado con éxito:', updatedCliente);
+      const updatedCuenta = await response.json();
+      console.log('Cuenta actualizado con éxito:', updatedCuenta);
 
-      setMessage('¡Cliente actualizado con éxito! Redireccionando...');
+      setMessage('¡Cuenta actualizado con éxito! Redireccionando...');
       setTimeout(() => {
-        router.push('/clientes');
+        router.push('/cuentas');
       }, 1500);
 
     } catch (error) {
       console.error('Error en el envío del formulario:', error);
-      setMessage('Error al actualizar el cliente. Inténtalo de nuevo.');
+      setMessage('Error al actualizar el cuenta. Inténtalo de nuevo.');
       setIsSubmitting(false);
     }
   };
 
   const BackButton = () => (
     <a
-      href="/clientes"
+      href="/cuentas"
       className="inline-flex items-center space-x-2 text-sm font-medium text-blue-600 hover:text-blue-800 transition duration-150"
     >
       <Icon icon="heroicons:arrow-left" className="w-4 h-4" />
-      <span>Volver a Clientes</span>
+      <span>Volver a Cuentas</span>
     </a>
   );
 
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="text-center p-8">Cargando cliente...</div>
+        <div className="text-center p-8">Cargando cuenta...</div>
       </DashboardLayout>
     );
   }
@@ -154,34 +166,62 @@ const EditClientePage = () => {
   return (
     <DashboardLayout>
       <div className="min-h-full">
-        <div className="mb-6">
+        <div className="mb-6 flex justify-between items-center w-[90%] mx-auto">
+          <h1 className="text-xl font-bold text-slate-900">Editar Cuenta</h1>
           <BackButton />
-          <h1 className="text-3xl font-bold text-slate-900 mt-2">Editar Cliente</h1>
-          <p className="text-slate-600">Edita la información del cliente.</p>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-100 max-w-4xl mx-auto">
+        <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-100 w-[90%] mx-auto">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Nombre de la Cuenta */}
+            <div>
+              <label htmlFor="cuenta" className="block text-sm font-medium text-slate-700 mb-1">Nombre de la Cuenta</label>
+              <input type="text" id="cuenta" name="cuenta" value={formData.cuenta} onChange={handleChange} required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="Ej. Ana García" />
+            </div>
+
+            {/* Nombre y Apellidos */}
+            <div className="grid grid-cols-2 gap-6">
               <div>
-                <label htmlFor="cliente" className="block text-sm font-medium text-slate-700 mb-1">Nombre del Cliente</label>
-                <input type="text" id="cliente" name="cliente" value={formData.cliente} onChange={handleChange} required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="Ej. Ana García" />
+                <label htmlFor="nombre" className="block text-sm font-medium text-slate-700 mb-1">Nombre</label>
+                <input type="text" id="nombre" name="nombre" value={formData.nombre} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="Ana" />
               </div>
+              <div>
+                <label htmlFor="apellidos" className="block text-sm font-medium text-slate-700 mb-1">Apellidos</label>
+                <input type="text" id="apellidos" name="apellidos" value={formData.apellidos} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="García López" />
+              </div>
+            </div>
+
+            {/* Empresa y Estado */}
+            <div className="grid grid-cols-2 gap-6">
               <div>
                 <label htmlFor="empresa" className="block text-sm font-medium text-slate-700 mb-1">Empresa</label>
                 <input type="text" id="empresa" name="empresa" value={formData.empresa} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 text-slate-700 focus:border-blue-500 transition duration-150" placeholder="Ej. Acme Corp." />
               </div>
+              <div>
+                <label htmlFor="estado" className="block text-sm font-medium text-slate-700 mb-1">Estado</label>
+                <select id="estado" name="estado" value={formData.estado} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700">
+                  <option value="Activo">Activo</option>
+                  <option value="Inactivo">Inactivo</option>
+                  <option value="Lead">Lead</option>
+                  <option value="Potencial">Potencial</option>
+                </select>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* Email y Teléfono */}
+            <div className="grid grid-cols-2 gap-6">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
                 <input type="email" id="email" name="email" value={formData.email} onChange={handleChange} required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="ejemplo@acme.com" />
+                {emailError && <span className="text-red-500 text-sm mt-1 block">{emailError}</span>}
               </div>
               <div>
                 <label htmlFor="telefono" className="block text-sm font-medium text-slate-700 mb-1">Teléfono</label>
                 <input type="tel" id="telefono" name="telefono" value={formData.telefono} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="+34 900 111 222" />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* Contraseña y Confirmar Contraseña */}
+            <div className="grid grid-cols-2 gap-6">
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">Nueva Contraseña (opcional)</label>
                 <div className="relative">
@@ -201,37 +241,17 @@ const EditClientePage = () => {
                 <input type="password" id="confirmPassword" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="••••••••" />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* URL de Imagen y Fecha de Alta */}
+            <div className="grid grid-cols-2 gap-6">
               <div>
-                <label htmlFor="estado" className="block text-sm font-medium text-slate-700 mb-1">Estado</label>
-                <select id="estado" name="estado" value={formData.estado} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700">
-                  <option value="Activo">Activo</option>
-                  <option value="Inactivo">Inactivo</option>
-                  <option value="Lead">Lead</option>
-                  <option value="Potencial">Potencial</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="imagen" className="block text-sm font-medium text-slate-700 mb-1">URL de Imagen (Perfil)</label>
+                <label htmlFor="imagen" className="block text-sm font-medium text-slate-700 mb-1">URL de Imagen de Perfil</label>
                 <input type="url" id="imagen" name="imagen" value={formData.imagen} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="https://..." />
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Módulos</label>
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input type="checkbox" value="Crm" checked={formData.modulo.includes('Crm')} onChange={handleCheckboxChange} className="mr-2" />
-                  Crm
-                </label>
-                <label className="flex items-center">
-                  <input type="checkbox" value="invoices" checked={formData.modulo.includes('invoices')} onChange={handleCheckboxChange} className="mr-2" />
-                  Invoices
-                </label>
+              <div>
+                <label htmlFor="fechaAlta" className="block text-sm font-medium text-slate-700 mb-1">Fecha de Alta</label>
+                <input type="text" id="fechaAlta" name="fechaAlta" value={formData.fechaAlta} readOnly className="w-full px-4 py-2 border border-slate-200 bg-slate-50 rounded-lg text-slate-500 cursor-not-allowed" />
               </div>
-            </div>
-            <div>
-              <label htmlFor="fechaAlta" className="block text-sm font-medium text-slate-700 mb-1">Fecha de alta</label>
-              <input type="text" id="fechaAlta" name="fechaAlta" value={formData.fechaAlta} readOnly className="w-full px-4 py-2 border border-slate-200 bg-slate-50 rounded-lg text-slate-500 cursor-not-allowed" />
             </div>
             {message && (
               <div className={`mt-4 p-3 rounded-lg text-sm font-semibold ${message.includes('éxito') ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
@@ -251,4 +271,4 @@ const EditClientePage = () => {
   );
 };
 
-export default EditClientePage;
+export default EditCuentaPage;

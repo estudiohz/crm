@@ -251,7 +251,7 @@ const AddFacturaPage = () => {
           <h1 className="text-3xl font-bold text-slate-900 mt-2">Añadir Nueva Factura</h1>
           <p className="text-slate-600">Completa la información para registrar una nueva factura.</p>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-100 max-w-6xl mx-auto">
+        <div className="bg-white p-6 rounded-lg shadow-md w-[96%] mx-auto">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="flex gap-6">
               <div className="relative w-1/2">

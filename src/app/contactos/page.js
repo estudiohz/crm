@@ -8,7 +8,6 @@ import { useState, useEffect } from 'react';
 
 // Encabezados de la tabla para los Contactos
 const contactosHeaders = [
-  { label: 'ID', key: 'id' },
   { label: 'Nombre', key: 'nombre' },
   { label: 'Apellidos', key: 'apellidos' },
   { label: 'Email', key: 'email' },
@@ -72,19 +71,20 @@ const ContactosPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Gestión de Contactos</h1>
+      <div className="flex justify-between items-center mb-4 w-[96%] mx-auto">
+        <h1 className="text-xl font-bold text-gray-900">Contactos <span className="text-sm text-gray-600 ml-2">{data.length} registros</span></h1>
+        <div className="flex space-x-3">
+          <RefreshButton onClick={() => setRefreshTrigger(prev => prev + 1)} />
+          <AddButton />
+        </div>
+      </div>
+      <div className="bg-white p-6 rounded-lg shadow-md w-[96%] mx-auto">
         {/* 2. Pasamos AddButton como prop actionButton a AdvancedTable */}
         <AdvancedTable
           title=""
           headers={contactosHeaders}
           data={data}
-          actionButton={
-            <div className="flex space-x-3">
-              <RefreshButton onClick={() => setRefreshTrigger(prev => prev + 1)} />
-              <AddButton />
-            </div>
-          }
+          actionButton={null}
           editPath="/contactos/edit"
         />
       </div>

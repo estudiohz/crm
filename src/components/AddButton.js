@@ -17,14 +17,17 @@ export default function AddButton() {
   // Determinar el modo basado en la ruta
   const lowerPathname = pathname.toLowerCase();
   const isPartnerMode = lowerPathname.includes('/partners');
+  const isCuentasMode = lowerPathname.includes('/cuentas');
   const isContactosMode = lowerPathname.includes('/contactos');
   const isEmpresasMode = lowerPathname.includes('/empresas');
   const isFacturasMode = lowerPathname.includes('/facturas');
 
   // 1. Definir el texto del botón
-  let buttonText = 'Añadir Cliente';
+  let buttonText = 'Añadir Cuenta';
   if (isPartnerMode) {
     buttonText = 'Añadir Partner';
+  } else if (isCuentasMode) {
+    buttonText = 'Añadir Cuenta';
   } else if (isContactosMode) {
     buttonText = 'Añadir Contacto';
   } else if (isEmpresasMode) {
@@ -34,9 +37,11 @@ export default function AddButton() {
   }
 
   // 2. Definir el enlace de destino.
-  let targetLink = '/clientes/add';
+  let targetLink = '/cuentas/add';
   if (isPartnerMode) {
     targetLink = '/partners/add';
+  } else if (isCuentasMode) {
+    targetLink = '/cuentas/add';
   } else if (isContactosMode) {
     targetLink = '/contactos/add';
   } else if (isEmpresasMode) {
@@ -46,10 +51,10 @@ export default function AddButton() {
   }
 
   return (
-    <div className="flex justify-end py-4">
+    <div className="flex justify-end">
       {/* Usamos Link para la navegación en Next.js. */}
       <Link href={targetLink}>
-        <button className="px-6 py-3 text-white font-semibold bg-indigo-600 rounded-lg shadow-lg hover:bg-indigo-700 transition duration-150 ease-in-out transform hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50">
+        <button className="px-4 py-2 text-white font-semibold rounded-lg shadow-lg hover:opacity-90 transition duration-150 ease-in-out transform hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50" style={{backgroundColor: '#23232b'}}>
           {buttonText}
         </button>
       </Link>

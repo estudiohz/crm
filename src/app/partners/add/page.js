@@ -16,7 +16,7 @@ const initialFormData = {
   imagen: 'https://placehold.co/50x50/1e40af/FFFFFF?text=PR', // Placeholder diferente para Partner
   estado: 'Activo',
   fechaAlta: new Date().toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit' }),
-  clients: [], // IDs de clientes asociados
+  clients: [], // IDs de cuentas asociados
 };
 
 const AddPartnerPage = () => {
@@ -24,7 +24,7 @@ const AddPartnerPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [clients, setClients] = useState([]);
+  const [cuentas, setCuentas] = useState([]);
   const [user, setUser] = useState(null);
   const [empresas, setEmpresas] = useState([]);
   const [empresaSearch, setEmpresaSearch] = useState('');
@@ -73,22 +73,22 @@ const AddPartnerPage = () => {
     }
   }, []);
 
-  // Fetch clients on mount
+  // Fetch cuentas on mount
   useEffect(() => {
-    const fetchClients = async () => {
+    const fetchCuentas = async () => {
       try {
-        const response = await fetch('/api/clientes');
+        const response = await fetch('/api/cuentas');
         if (response.ok) {
-          const clientsData = await response.json();
-          setClients(clientsData);
+          const cuentasData = await response.json();
+          setCuentas(cuentasData);
         } else {
-          console.error('Error fetching clients');
+          console.error('Error fetching cuentas');
         }
       } catch (error) {
-        console.error('Error fetching clients:', error);
+        console.error('Error fetching cuentas:', error);
       }
     };
-    fetchClients();
+    fetchCuentas();
   }, []);
 
   const handleEmpresaSearch = (e) => {
@@ -219,114 +219,112 @@ const AddPartnerPage = () => {
   return (
     <DashboardLayout>
       <div className="min-h-full">
-        <div className="mb-6">
+        <div className="mb-6 flex justify-between items-center w-[90%] mx-auto">
+          <h1 className="text-xl font-bold text-slate-900">Añadir Nuevo Partner</h1>
           <BackButton />
-          {/* CAMBIO CLAVE: Título de la página */}
-          <h1 className="text-3xl font-bold text-slate-900 mt-2">Añadir Nuevo Partner</h1>
-          <p className="text-slate-600">Completa la información para registrar un nuevo partner.</p>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-100 max-w-4xl mx-auto">
+        <div className="bg-white p-6 rounded-lg shadow-md w-[96%] mx-auto">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                {/* CAMBIO CLAVE: Etiqueta del campo */}
-                <label htmlFor="partner" className="block text-sm font-medium text-slate-700 mb-1">Nombre del Partner</label>
-                <input type="text" id="partner" name="partner" value={formData.partner} onChange={handleChange} required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="Ej. Javier Gómez" />
-              </div>
-              <div>
-                <label htmlFor="empresa" className="block text-sm font-medium text-slate-700 mb-1">Empresa</label>
-                <input
-                  type="text"
-                  id="empresa"
-                  name="empresa"
-                  value={empresaSearch}
-                  onChange={handleEmpresaSearch}
-                  onFocus={() => setShowDropdown(true)}
-                  onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700"
-                  placeholder="Buscar empresa..."
-                />
-                {showDropdown && (
-                  <div className="absolute z-10 w-full bg-white border border-slate-300 rounded-lg mt-1 max-h-40 overflow-y-auto shadow-lg">
-                    {filteredEmpresas.map(empresa => (
-                      <div
-                        key={empresa.id}
-                        onClick={() => selectEmpresa(empresa)}
-                        className="px-4 py-2 hover:bg-slate-100 cursor-pointer"
-                      >
-                        {empresa.empresa}
-                      </div>
-                    ))}
-                    {empresaSearch && !filteredEmpresas.find(e => e.empresa.toLowerCase() === empresaSearch.toLowerCase()) && (
-                      <div
-                        onClick={() => { setNewEmpresaData({ ...newEmpresaData, empresa: empresaSearch }); setShowNewForm(true); setShowDropdown(false); }}
-                        className="px-4 py-2 hover:bg-slate-100 cursor-pointer text-blue-600 flex justify-between items-center"
-                      >
-                        <span>Crear nueva empresa: {empresaSearch}</span>
-                        <span className="bg-blue-500 text-white px-2 py-1 rounded text-xs">Nuevo</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {showNewForm && (
-                  <div className="mt-4 p-4 bg-slate-50 border border-slate-300 rounded-lg">
-                    <h3 className="text-sm font-medium text-slate-700 mb-2">Crear Nueva Empresa</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <input
-                        type="text"
-                        name="empresa"
-                        value={newEmpresaData.empresa}
-                        onChange={handleNewEmpresaChange}
-                        placeholder="Nombre empresa"
-                        className="px-3 py-2 border border-slate-300 rounded text-sm"
-                      />
-                      <input
-                        type="email"
-                        name="email"
-                        value={newEmpresaData.email}
-                        onChange={handleNewEmpresaChange}
-                        placeholder="Email"
-                        className="px-3 py-2 border border-slate-300 rounded text-sm"
-                      />
-                      <input
-                        type="tel"
-                        name="telefono"
-                        value={newEmpresaData.telefono}
-                        onChange={handleNewEmpresaChange}
-                        placeholder="Teléfono"
-                        className="px-3 py-2 border border-slate-300 rounded text-sm"
-                      />
-                      <select
-                        name="estado"
-                        value={newEmpresaData.estado}
-                        onChange={handleNewEmpresaChange}
-                        className="px-3 py-2 border border-slate-300 rounded text-sm"
-                      >
-                        <option value="Activo">Activo</option>
-                        <option value="Inactivo">Inactivo</option>
-                      </select>
-                    </div>
-                    <div className="flex justify-end space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowNewForm(false)}
-                        className="px-3 py-1 border border-slate-300 text-slate-700 rounded text-sm hover:bg-slate-100"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={saveNewEmpresa}
-                        className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                      >
-                        Guardar
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                       {/* Nombre del Partner */}
+                       <div>
+                         <label htmlFor="partner" className="block text-sm font-medium text-slate-700 mb-1">Nombre del Partner</label>
+                         <input type="text" id="partner" name="partner" value={formData.partner} onChange={handleChange} required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="Ej. Javier Gómez" />
+                       </div>
+                       {/* Empresa */}
+                       <div>
+                         <label htmlFor="empresa" className="block text-sm font-medium text-slate-700 mb-1">Empresa</label>
+                         <input
+                           type="text"
+                           id="empresa"
+                           name="empresa"
+                           value={empresaSearch}
+                           onChange={handleEmpresaSearch}
+                           onFocus={() => setShowDropdown(true)}
+                           onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+                           className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700"
+                           placeholder="Buscar empresa..."
+                         />
+                         {showDropdown && (
+                           <div className="absolute z-10 w-full bg-white border border-slate-300 rounded-lg mt-1 max-h-40 overflow-y-auto shadow-lg">
+                             {filteredEmpresas.map(empresa => (
+                               <div
+                                 key={empresa.id}
+                                 onClick={() => selectEmpresa(empresa)}
+                                 className="px-4 py-2 hover:bg-slate-100 cursor-pointer"
+                               >
+                                 {empresa.empresa}
+                               </div>
+                             ))}
+                             {empresaSearch && !filteredEmpresas.find(e => e.empresa.toLowerCase() === empresaSearch.toLowerCase()) && (
+                               <div
+                                 onClick={() => { setNewEmpresaData({ ...newEmpresaData, empresa: empresaSearch }); setShowNewForm(true); setShowDropdown(false); }}
+                                 className="px-4 py-2 hover:bg-slate-100 cursor-pointer text-blue-600 flex justify-between items-center"
+                               >
+                                 <span>Crear nueva empresa: {empresaSearch}</span>
+                                 <span className="bg-blue-500 text-white px-2 py-1 rounded text-xs">Nuevo</span>
+                               </div>
+                             )}
+                           </div>
+                         )}
+                         {showNewForm && (
+                           <div className="mt-4 p-4 bg-slate-50 border border-slate-300 rounded-lg">
+                             <h3 className="text-sm font-medium text-slate-700 mb-2">Crear Nueva Empresa</h3>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                               <input
+                                 type="text"
+                                 name="empresa"
+                                 value={newEmpresaData.empresa}
+                                 onChange={handleNewEmpresaChange}
+                                 placeholder="Nombre empresa"
+                                 className="px-3 py-2 border border-slate-300 rounded text-sm"
+                               />
+                               <input
+                                 type="email"
+                                 name="email"
+                                 value={newEmpresaData.email}
+                                 onChange={handleNewEmpresaChange}
+                                 placeholder="Email"
+                                 className="px-3 py-2 border border-slate-300 rounded text-sm"
+                               />
+                               <input
+                                 type="tel"
+                                 name="telefono"
+                                 value={newEmpresaData.telefono}
+                                 onChange={handleNewEmpresaChange}
+                                 placeholder="Teléfono"
+                                 className="px-3 py-2 border border-slate-300 rounded text-sm"
+                               />
+                               <select
+                                 name="estado"
+                                 value={newEmpresaData.estado}
+                                 onChange={handleNewEmpresaChange}
+                                 className="px-3 py-2 border border-slate-300 rounded text-sm"
+                               >
+                                 <option value="Activo">Activo</option>
+                                 <option value="Inactivo">Inactivo</option>
+                               </select>
+                             </div>
+                             <div className="flex justify-end space-x-2">
+                               <button
+                                 type="button"
+                                 onClick={() => setShowNewForm(false)}
+                                 className="px-3 py-1 border border-slate-300 text-slate-700 rounded text-sm hover:bg-slate-100"
+                               >
+                                 Cancelar
+                               </button>
+                               <button
+                                 type="button"
+                                 onClick={saveNewEmpresa}
+                                 className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                               >
+                                 Guardar
+                               </button>
+                             </div>
+                           </div>
+                         )}
+                       </div>
+                       {/* Email y Teléfono */}
+                       <div className="grid grid-cols-2 gap-6">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
                 <input type="email" id="email" name="email" value={formData.email} onChange={handleChange} required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="contacto@synergy.com" />
@@ -336,7 +334,9 @@ const AddPartnerPage = () => {
                 <input type="tel" id="telefono" name="telefono" value={formData.telefono} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="+34 900 333 444" />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* Contraseña y Confirmar Contraseña */}
+            <div className="grid grid-cols-2 gap-6">
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">Contraseña</label>
                 <div className="relative">
@@ -356,7 +356,12 @@ const AddPartnerPage = () => {
                 <input type="password" id="confirmPassword" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="••••••••" />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="imagen" className="block text-sm font-medium text-slate-700 mb-1">URL de Imagen (Logo/Perfil)</label>
+                <input type="url" id="imagen" name="imagen" value={formData.imagen} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="https://..." />
+              </div>
               <div>
                 <label htmlFor="estado" className="block text-sm font-medium text-slate-700 mb-1">Estado</label>
                 <select id="estado" name="estado" value={formData.estado} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700">
@@ -365,19 +370,15 @@ const AddPartnerPage = () => {
                   <option value="Potencial">Potencial</option>
                 </select>
               </div>
-              <div>
-                <label htmlFor="imagen" className="block text-sm font-medium text-slate-700 mb-1">URL de Imagen (Logo/Perfil)</label>
-                <input type="url" id="imagen" name="imagen" value={formData.imagen} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="https://..." />
-              </div>
             </div>
             <div>
-              <label htmlFor="clients" className="block text-sm font-medium text-slate-700 mb-1">Clientes Asociados</label>
+              <label htmlFor="clients" className="block text-sm font-medium text-slate-700 mb-1">Cuentas Asociadas</label>
               <select id="clients" name="clients" multiple value={formData.clients.map(String)} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700">
-                {clients.map(client => (
-                  <option key={client.id} value={client.id}>{client.cliente} - {client.empresa}</option>
+                {cuentas.map(cuenta => (
+                  <option key={cuenta.id} value={cuenta.id}>{cuenta.cuenta} - {cuenta.empresa}</option>
                 ))}
               </select>
-              <p className="text-xs text-slate-500 mt-1">Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples clientes.</p>
+              <p className="text-xs text-slate-500 mt-1">Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples cuentas.</p>
             </div>
             <div>
               <label htmlFor="fechaAlta" className="block text-sm font-medium text-slate-700 mb-1">Fecha de alta</label>

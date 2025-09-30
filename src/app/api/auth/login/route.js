@@ -33,12 +33,12 @@ export async function POST(request) {
       return NextResponse.json({ message: 'Credenciales inválidas.' }, { status: 401 });
     }
 
-    // 5. Si el rol es 'cliente', obtener los datos del cliente
+    // 5. Si el rol es 'cuenta', obtener los datos del cuenta
     // Si el rol es 'partner', obtener los datos del partner
-    let clienteData = null;
+    let cuentaData = null;
     let partnerData = null;
-    if (user.role === 'cliente') {
-      clienteData = await prisma.cliente.findFirst({
+    if (user.role === 'cuenta') {
+      cuentaData = await prisma.cuenta.findFirst({
         where: { email: user.email },
       });
     } else if (user.role === 'partner') {
@@ -56,7 +56,7 @@ export async function POST(request) {
         email: user.email,
         name: user.name,
         role: user.role,
-        cliente: clienteData,
+        cuenta: cuentaData,
         partner: partnerData,
       },
     });

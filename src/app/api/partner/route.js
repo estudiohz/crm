@@ -56,9 +56,9 @@ export async function POST(request) {
 
     console.log('Partner creado en la base de datos:', newPartner);
 
-    // Asociar clientes si se proporcionaron
+    // Asociar cuentas si se proporcionaron
     if (clients && clients.length > 0) {
-      await prisma.cliente.updateMany({
+      await prisma.cuenta.updateMany({
         where: {
           id: { in: clients },
         },
@@ -79,16 +79,16 @@ export async function POST(request) {
 // Asegúrate de tener también la función GET para obtener los partners
 export async function GET() {
   try {
-    // CAMBIO CLAVE: Usa prisma.partner.findMany en lugar de prisma.cliente.findMany
+    // CAMBIO CLAVE: Usa prisma.partner.findMany en lugar de prisma.cuenta.findMany
     const partners = await prisma.partner.findMany({
       include: {
-        clientes: true, // Incluir clientes para contar
+        cuentas: true, // Incluir cuentas para contar
       },
     });
-    // Añadir el conteo de clientes
+    // Añadir el conteo de cuentas
     const partnersWithCount = partners.map(partner => ({
       ...partner,
-      numClientes: partner.clientes.length,
+      numCuentas: partner.cuentas.length,
     }));
     console.log('Partners fetched from DB:', partnersWithCount);
     return NextResponse.json(partnersWithCount, { status: 200 });
@@ -165,16 +165,16 @@ export async function PUT(request) {
       },
     });
 
-    // Actualizar asociaciones de clientes
+    // Actualizar asociaciones de cuentas
     if (clients !== undefined) {
       // Primero, remover asociaciones existentes
-      await prisma.cliente.updateMany({
+      await prisma.cuenta.updateMany({
         where: { partnerRecordId: parseInt(id) },
         data: { partnerRecordId: null },
       });
-      // Luego, asociar los nuevos clientes
+      // Luego, asociar los nuevos cuentas
       if (clients.length > 0) {
-        await prisma.cliente.updateMany({
+        await prisma.cuenta.updateMany({
           where: { id: { in: clients } },
           data: { partnerRecordId: parseInt(id) },
         });

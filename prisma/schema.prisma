@@ -13,17 +13,17 @@ model User {
   email     String   @unique
   name      String
   password  String
-  role      String   // "superadmin", "partner", "cliente"
+  role      String   // "superadmin", "partner", "cuenta"
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relación: un partner tiene muchos clientes
+  // Relación: un partner tiene muchos cuentas
   partnerId String?
-  partner   User?    @relation("PartnerClientes", fields: [partnerId], references: [id])
-  clientes  User[]   @relation("PartnerClientes")
+  partner   User?    @relation("PartnerCuentas", fields: [partnerId], references: [id])
+  cuentas   User[]   @relation("PartnerCuentas")
 
-  // Relación con Cliente
-  clientesRecords Cliente[] @relation("UserClientes")
+  // Relación con Cuenta
+  cuentasRecords Cuenta[] @relation("UserCuentas")
 
   // Relación con Factura
   facturas Factura[]
@@ -35,11 +35,13 @@ model User {
   contactos Contacto[]
 }
 
-model Cliente {
+model Cuenta {
   id        Int      @id @default(autoincrement())
-  cliente   String
+  cuenta    String
+  nombre    String?
+  apellidos String?
   empresa   String?
-  email     String
+  email     String   @unique
   telefono  String?
   imagen    String?
   estado    String
@@ -51,7 +53,7 @@ model Cliente {
 
   // Relación con User (partner)
   partnerId String?
-  partner   User?    @relation("UserClientes", fields: [partnerId], references: [id])
+  partner   User?    @relation("UserCuentas", fields: [partnerId], references: [id])
 
   // Relación con Partner
   partnerRecordId Int?
@@ -70,8 +72,8 @@ model Partner {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relación con Clientes
-  clientes Cliente[]
+  // Relación con Cuentas
+  cuentas Cuenta[]
 }
 
 model Contacto {

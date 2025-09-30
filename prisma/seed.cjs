@@ -1,4 +1,4 @@
-const { PrismaClient } = require('../src/generated/prisma');
+const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcrypt');
 
 const prisma = new PrismaClient();
@@ -23,7 +23,7 @@ async function main() {
   console.log(`Usuario superadmin creado con ID: ${superadmin.id}`);
 
   // Crear Partner
-  const partner = await prisma.user.upsert({
+  const partnerUser = await prisma.user.upsert({
     where: { email: 'partner@test.com' },
     update: {},
     create: {
@@ -33,66 +33,79 @@ async function main() {
       role: 'partner',
     },
   });
-  console.log(`Usuario partner creado con ID: ${partner.id}`);
+  console.log(`Usuario partner creado con ID: ${partnerUser.id}`);
 
-  // Crear Clientes para el Partner
-  const client1User = await prisma.user.upsert({
-    where: { email: 'cliente1@test.com' },
+  // Crear registro Partner
+  const partner = await prisma.partner.upsert({
+    where: { id: 1 }, // Since it's autoincrement, use a fixed id for upsert
     update: {},
     create: {
-      email: 'cliente1@test.com',
-      name: 'Cliente Uno',
-      password: hashedPassword,
-      role: 'cliente',
-      partnerId: partner.id, // Vinculado al partner
+      partner: 'Partner Company',
+      email: 'partner@test.com',
+      telefono: '555-0000',
+      estado: 'Activo',
     },
   });
-  console.log(`Usuario cliente1 creado con ID: ${client1User.id}`);
+  console.log(`Partner creado con ID: ${partner.id}`);
 
-  const cliente1 = await prisma.cliente.upsert({
-    where: { email: 'cliente1@test.com' },
+  // Crear Cuentas para el Partner
+  const client1User = await prisma.user.upsert({
+    where: { email: 'cuenta1@test.com' },
     update: {},
     create: {
-      cliente: 'Cliente Uno',
+      email: 'cuenta1@test.com',
+      name: 'Cuenta Uno',
+      password: hashedPassword,
+      role: 'cuenta',
+      partnerId: partnerUser.id, // Vinculado al partner user
+    },
+  });
+  console.log(`Usuario cuenta1 creado con ID: ${client1User.id}`);
+
+  const cuenta1 = await prisma.cuenta.upsert({
+    where: { email: 'cuenta1@test.com' },
+    update: {},
+    create: {
+      cuenta: 'Cuenta Uno',
       empresa: 'Empresa Uno',
-      email: 'cliente1@test.com',
+      email: 'cuenta1@test.com',
       telefono: '123456789',
       imagen: 'https://placehold.co/50x50/3b82f6/FFFFFF?text=C1',
       estado: 'Activo',
-      modulo: ['Crm', 'invoices'],
-      partnerRecordId: partner.id,
+      modulo: ['Crm'], // CRM always active
+      partnerRecordId: partner.id, // Partner record id
     },
   });
-  console.log(`Cliente cliente1 creado con ID: ${cliente1.id}`);
+  console.log(`Cuenta cuenta1 creado con ID: ${cuenta1.id}`);
 
   const client2User = await prisma.user.upsert({
-    where: { email: 'cliente2@test.com' },
+    where: { email: 'cuenta2@test.com' },
     update: {},
     create: {
-      email: 'cliente2@test.com',
-      name: 'Cliente Dos',
+      email: 'cuenta2@test.com',
+      name: 'Cuenta Dos',
       password: hashedPassword,
-      role: 'cliente',
-      partnerId: partner.id, // Vinculado al partner
+      role: 'cuenta',
+      partnerId: partnerUser.id, // Vinculado al partner user
     },
   });
-  console.log(`Usuario cliente2 creado con ID: ${client2User.id}`);
+  console.log(`Usuario cuenta2 creado con ID: ${client2User.id}`);
 
-  const cliente2 = await prisma.cliente.upsert({
-    where: { email: 'cliente2@test.com' },
+  const cuenta2 = await prisma.cuenta.upsert({
+    where: { email: 'cuenta2@test.com' },
     update: {},
     create: {
-      cliente: 'Cliente Dos',
+      cuenta: 'Cuenta Dos',
       empresa: 'Empresa Dos',
-      email: 'cliente2@test.com',
+      email: 'cuenta2@test.com',
       telefono: '987654321',
       imagen: 'https://placehold.co/50x50/3b82f6/FFFFFF?text=C2',
       estado: 'Activo',
-      modulo: ['Crm'],
-      partnerRecordId: partner.id,
+      modulo: ['Crm'], // CRM always active
+      partnerRecordId: partner.id, // Partner record id
     },
   });
-  console.log(`Cliente cliente2 creado con ID: ${cliente2.id}`);
+  console.log(`Cuenta cuenta2 creado con ID: ${cuenta2.id}`);
 
   console.log('Seeding completado con éxito.');
 }

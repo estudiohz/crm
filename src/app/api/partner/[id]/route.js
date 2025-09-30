@@ -10,7 +10,7 @@ export async function GET(request, { params }) {
     const partner = await prisma.partner.findUnique({
       where: { id: parseInt(id) },
       include: {
-        clientes: true, // Incluir clientes asociados
+        cuentas: true, // Incluir cuentas asociados
       },
     });
 
@@ -30,8 +30,8 @@ export async function DELETE(request, { params }) {
   try {
     const { id } = await params;
 
-    // Primero, desasociar clientes
-    await prisma.cliente.updateMany({
+    // Primero, desasociar cuentas
+    await prisma.cuenta.updateMany({
       where: { partnerRecordId: parseInt(id) },
       data: { partnerRecordId: null },
     });

@@ -12,8 +12,8 @@ const Sidebar = () => {
   const [partnerOpen, setPartnerOpen] = useState(true);
   const pathname = usePathname();
 
-  const isPartnerActive = pathname.startsWith('/clientes') || pathname.startsWith('/partners');
-  const isModulosActive = pathname.startsWith('/contactos') || pathname.startsWith('/empresas') || pathname.startsWith('/facturas');
+  const isPartnerActive = pathname.startsWith('/cuentas') || pathname.startsWith('/partners');
+  const isModulosActive = pathname.startsWith('/facturas');
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -25,7 +25,7 @@ const Sidebar = () => {
   const renderMenu = () => {
     if (!user) return null;
 
-    const { role, cliente } = user;
+    const { role, cuenta } = user;
 
     if (role === 'superadmin') {
       return (
@@ -37,15 +37,33 @@ const Sidebar = () => {
             </Link>
           </li>
           <li className="mb-2">
-            <Link href="/clientes" className="flex items-center p-2 rounded hover:bg-gray-700">
-              <Icon icon="heroicons:users" className="w-5 h-5 mr-2" />
-              Clientes
-            </Link>
+            <hr className="border-gray-600" />
           </li>
           <li className="mb-2">
             <Link href="/partners" className="flex items-center p-2 rounded hover:bg-gray-700">
               <Icon icon="heroicons:building-office" className="w-5 h-5 mr-2" />
               Partners
+            </Link>
+          </li>
+          <li className="mb-2">
+            <Link href="/cuentas" className="flex items-center p-2 rounded hover:bg-gray-700">
+              <Icon icon="heroicons:users" className="w-5 h-5 mr-2" />
+              Cuentas
+            </Link>
+          </li>
+          <li className="mb-2">
+            <hr className="border-gray-600" />
+          </li>
+          <li className="mb-2">
+            <Link href="/contactos" className="flex items-center p-2 rounded hover:bg-gray-700">
+              <Icon icon="heroicons:user-group" className="w-5 h-5 mr-2" />
+              Contactos
+            </Link>
+          </li>
+          <li className="mb-2">
+            <Link href="/empresas" className="flex items-center p-2 rounded hover:bg-gray-700">
+              <Icon icon="heroicons:building-office-2" className="w-5 h-5 mr-2" />
+              Empresas
             </Link>
           </li>
           <li className="mb-2">
@@ -63,18 +81,6 @@ const Sidebar = () => {
             {modulosOpen && (
               <ul className="ml-6 mt-2">
                 <li className="mb-2">
-                  <Link href="/contactos" className="flex items-center p-2 rounded hover:bg-gray-700">
-                    <Icon icon="heroicons:user-group" className="w-4 h-4 mr-2" />
-                    CRM - Contactos
-                  </Link>
-                </li>
-                <li className="mb-2">
-                  <Link href="/empresas" className="flex items-center p-2 rounded hover:bg-gray-700">
-                    <Icon icon="heroicons:building-office-2" className="w-4 h-4 mr-2" />
-                    CRM - Empresas
-                  </Link>
-                </li>
-                <li className="mb-2">
                   <Link href="/facturas" className="flex items-center p-2 rounded hover:bg-gray-700">
                     <Icon icon="heroicons:document-text" className="w-4 h-4 mr-2" />
                     Facturas
@@ -85,8 +91,7 @@ const Sidebar = () => {
           </li>
         </ul>
       );
-    } else if (role === 'cliente') {
-      const modulo = cliente?.modulo || [];
+    } else if (role === 'cuenta') {
       return (
         <ul>
           <li className="mb-2">
@@ -95,28 +100,27 @@ const Sidebar = () => {
               Dashboard
             </Link>
           </li>
-          {modulo.includes('Crm') && (
-            <>
-              <li className="mb-2">
-                <Link href="/contactos" className="flex items-center p-2 rounded hover:bg-gray-700">
-                  <Icon icon="heroicons:user-group" className="w-5 h-5 mr-2" />
-                  Contactos
-                </Link>
-              </li>
-              <li className="mb-2">
-                <Link href="/empresas" className="flex items-center p-2 rounded hover:bg-gray-700">
-                  <Icon icon="heroicons:building-office-2" className="w-4 h-4 mr-2" />
-                  Empresas
-                </Link>
-              </li>
-              <li className="mb-2">
-                <Link href="/facturas" className="flex items-center p-2 rounded hover:bg-gray-700">
-                  <Icon icon="heroicons:document-text" className="w-4 h-4 mr-2" />
-                  Facturas
-                </Link>
-              </li>
-            </>
-          )}
+          <li className="mb-2">
+            <hr className="border-gray-600" />
+          </li>
+          <li className="mb-2">
+            <Link href="/contactos" className="flex items-center p-2 rounded hover:bg-gray-700">
+              <Icon icon="heroicons:user-group" className="w-5 h-5 mr-2" />
+              Contactos
+            </Link>
+          </li>
+          <li className="mb-2">
+            <Link href="/empresas" className="flex items-center p-2 rounded hover:bg-gray-700">
+              <Icon icon="heroicons:building-office-2" className="w-5 h-5 mr-2" />
+              Empresas
+            </Link>
+          </li>
+          <li className="mb-2">
+            <Link href="/facturas" className="flex items-center p-2 rounded hover:bg-gray-700">
+              <Icon icon="heroicons:document-text" className="w-5 h-5 mr-2" />
+              Facturas
+            </Link>
+          </li>
         </ul>
       );
     } else if (role === 'partner') {
@@ -127,6 +131,9 @@ const Sidebar = () => {
               <Icon icon="heroicons:home" className="w-5 h-5 mr-2" />
               Dashboard
             </Link>
+          </li>
+          <li className="mb-2">
+            <hr className="border-gray-600" />
           </li>
           <li className="mb-2">
             <div
@@ -143,13 +150,28 @@ const Sidebar = () => {
             {partnerOpen && (
               <ul className="ml-6 mt-2">
                 <li className="mb-2">
-                  <Link href="/clientes" className="flex items-center p-2 rounded hover:bg-gray-700">
+                  <Link href="/cuentas" className="flex items-center p-2 rounded hover:bg-gray-700">
                     <Icon icon="heroicons:users" className="w-4 h-4 mr-2" />
-                    Clientes
+                    Cuentas
                   </Link>
                 </li>
               </ul>
             )}
+          </li>
+          <li className="mb-2">
+            <hr className="border-gray-600" />
+          </li>
+          <li className="mb-2">
+            <Link href="/contactos" className="flex items-center p-2 rounded hover:bg-gray-700">
+              <Icon icon="heroicons:user-group" className="w-5 h-5 mr-2" />
+              Contactos
+            </Link>
+          </li>
+          <li className="mb-2">
+            <Link href="/empresas" className="flex items-center p-2 rounded hover:bg-gray-700">
+              <Icon icon="heroicons:building-office-2" className="w-5 h-5 mr-2" />
+              Empresas
+            </Link>
           </li>
           <li className="mb-2">
             <div
@@ -165,18 +187,6 @@ const Sidebar = () => {
             </div>
             {modulosOpen && (
               <ul className="ml-6 mt-2">
-                <li className="mb-2">
-                  <Link href="/contactos" className="flex items-center p-2 rounded hover:bg-gray-700">
-                    <Icon icon="heroicons:user-group" className="w-4 h-4 mr-2" />
-                    CRM - Contactos
-                  </Link>
-                </li>
-                <li className="mb-2">
-                  <Link href="/empresas" className="flex items-center p-2 rounded hover:bg-gray-700">
-                    <Icon icon="heroicons:building-office-2" className="w-4 h-4 mr-2" />
-                    CRM - Empresas
-                  </Link>
-                </li>
                 <li className="mb-2">
                   <Link href="/facturacion" className="flex items-center p-2 rounded hover:bg-gray-700">
                     <Icon icon="heroicons:document-text" className="w-4 h-4 mr-2" />

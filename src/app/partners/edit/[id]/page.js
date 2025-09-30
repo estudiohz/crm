@@ -26,7 +26,7 @@ const EditPartnerPage = () => {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [clients, setClients] = useState([]);
+  const [cuentas, setCuentas] = useState([]);
   const [user, setUser] = useState(null);
   const [empresas, setEmpresas] = useState([]);
   const [empresaSearch, setEmpresaSearch] = useState('');
@@ -80,7 +80,7 @@ const EditPartnerPage = () => {
         setFormData({
           ...partnerData,
           fechaAlta: formattedFecha,
-          clients: partnerData.clientes ? partnerData.clientes.map(c => c.id) : [],
+          clients: partnerData.cuentas ? partnerData.cuentas.map(c => c.id) : [],
         });
         setEmpresaSearch(partnerData.empresa || '');
       } catch (error) {
@@ -91,24 +91,24 @@ const EditPartnerPage = () => {
       }
     }
 
-    // Fetch clients
-    const fetchClients = async () => {
+    // Fetch cuentas
+    const fetchCuentas = async () => {
       try {
-        const response = await fetch('/api/clientes');
+        const response = await fetch('/api/cuentas');
         if (response.ok) {
-          const clientsData = await response.json();
-          setClients(clientsData);
+          const cuentasData = await response.json();
+          setCuentas(cuentasData);
         } else {
-          console.error('Error fetching clients');
+          console.error('Error fetching cuentas');
         }
       } catch (error) {
-        console.error('Error fetching clients:', error);
+        console.error('Error fetching cuentas:', error);
       }
     };
 
     if (id) {
       fetchPartner();
-      fetchClients();
+      fetchCuentas();
     }
   }, [id]);
 
@@ -236,13 +236,46 @@ const EditPartnerPage = () => {
   return (
     <DashboardLayout>
       <div className="min-h-full">
-        <div className="mb-6">
+        <div className="mb-6 flex justify-between items-center w-[90%] mx-auto">
+          <h1 className="text-xl font-bold text-slate-900">Editar Partner</h1>
           <BackButton />
-          <h1 className="text-3xl font-bold text-slate-900 mt-2">Editar Partner</h1>
-          <p className="text-slate-600">Edita la información del partner.</p>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-100 max-w-4xl mx-auto">
+        <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-100 w-[90%] mx-auto">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email y Teléfono */}
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                <input type="email" id="email" name="email" value={formData.email} onChange={handleChange} required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="contacto@synergy.com" />
+              </div>
+              <div>
+                <label htmlFor="telefono" className="block text-sm font-medium text-slate-700 mb-1">Teléfono</label>
+                <input type="tel" id="telefono" name="telefono" value={formData.telefono} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="+34 900 333 444" />
+              </div>
+            </div>
+
+            {/* Nueva Contraseña y Confirmar Nueva Contraseña */}
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">Nueva Contraseña (opcional)</label>
+                <div className="relative">
+                  <input type={showPassword ? "text" : "password"} id="password" name="password" value={formData.password} onChange={handleChange} className="w-full px-4 py-2 pr-20 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="••••••••" />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-slate-500 hover:text-slate-700 mr-2">
+                      <Icon icon={showPassword ? "heroicons:eye-slash" : "heroicons:eye"} className="w-5 h-5" />
+                    </button>
+                    <button type="button" onClick={() => navigator.clipboard.writeText(formData.password)} className="text-slate-500 hover:text-slate-700">
+                      <Icon icon="heroicons:clipboard-document" className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700 mb-1">Confirmar Nueva Contraseña</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="••••••••" />
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label htmlFor="partner" className="block text-sm font-medium text-slate-700 mb-1">Nombre del Partner</label>
@@ -343,36 +376,6 @@ const EditPartnerPage = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                <input type="email" id="email" name="email" value={formData.email} onChange={handleChange} required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="contacto@synergy.com" />
-              </div>
-              <div>
-                <label htmlFor="telefono" className="block text-sm font-medium text-slate-700 mb-1">Teléfono</label>
-                <input type="tel" id="telefono" name="telefono" value={formData.telefono} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="+34 900 333 444" />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">Nueva Contraseña (opcional)</label>
-                <div className="relative">
-                  <input type={showPassword ? "text" : "password"} id="password" name="password" value={formData.password} onChange={handleChange} className="w-full px-4 py-2 pr-20 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="••••••••" />
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-2">
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-slate-500 hover:text-slate-700 mr-2">
-                      <Icon icon={showPassword ? "heroicons:eye-slash" : "heroicons:eye"} className="w-5 h-5" />
-                    </button>
-                    <button type="button" onClick={() => navigator.clipboard.writeText(formData.password)} className="text-slate-500 hover:text-slate-700">
-                      <Icon icon="heroicons:clipboard-document" className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700 mb-1">Confirmar Nueva Contraseña</label>
-                <input type="password" id="confirmPassword" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="••••••••" />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
                 <label htmlFor="estado" className="block text-sm font-medium text-slate-700 mb-1">Estado</label>
                 <select id="estado" name="estado" value={formData.estado} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700">
                   <option value="Activo">Activo</option>
@@ -386,13 +389,13 @@ const EditPartnerPage = () => {
               </div>
             </div>
             <div>
-              <label htmlFor="clients" className="block text-sm font-medium text-slate-700 mb-1">Clientes Asociados</label>
+              <label htmlFor="clients" className="block text-sm font-medium text-slate-700 mb-1">Cuentas Asociadas</label>
               <select id="clients" name="clients" multiple value={formData.clients.map(String)} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700">
-                {clients.map(client => (
-                  <option key={client.id} value={client.id}>{client.cliente} - {client.empresa}</option>
+                {cuentas.map(cuenta => (
+                  <option key={cuenta.id} value={cuenta.id}>{cuenta.cuenta} - {cuenta.empresa}</option>
                 ))}
               </select>
-              <p className="text-xs text-slate-500 mt-1">Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples clientes.</p>
+              <p className="text-xs text-slate-500 mt-1">Mantén presionado Ctrl (o Cmd en Mac) para seleccionar múltiples cuentas.</p>
             </div>
             <div>
               <label htmlFor="fechaAlta" className="block text-sm font-medium text-slate-700 mb-1">Fecha de alta</label>

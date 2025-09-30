@@ -7,11 +7,10 @@ import { useState, useEffect } from 'react';
 
 // Encabezados de la tabla para los Partners
 const partnersHeaders = [
-  { label: 'ID', key: 'id' },
   { label: 'Imagen', key: 'imagen' },
   { label: 'Partner', key: 'partner' },
   { label: 'Empresa', key: 'empresa' },
-  { label: 'Clientes', key: 'numClientes' },
+  { label: 'Cuentas', key: 'numCuentas' },
   { label: 'Email', key: 'email' },
   { label: 'Teléfono', key: 'telefono' },
   { label: 'Fecha de alta', key: 'fechaAlta' },
@@ -66,16 +65,18 @@ const PartnersPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Gestión de Partners</h1>
-
+      <div className="flex justify-between items-center mb-4 w-[96%] mx-auto">
+        <h1 className="text-xl font-bold text-gray-900">Partners <span className="text-sm text-gray-600 ml-2">{data.length} registros</span></h1>
+        <AddButton />
+      </div>
+      <div id="main-container" className="bg-white p-6 rounded-lg shadow-md w-[96%] mx-auto">
         {/* Usamos AdvancedTable y le pasamos el botón dinámico AddButton como prop */}
         <AdvancedTable
           title=""
           // CORRECCIÓN CLAVE: Cambiado 'headers' a 'partnersHeaders'
           headers={partnersHeaders}
           data={data}
-          actionButton={<AddButton />} // Esto inyecta el botón en la cabecera de la tabla
+          actionButton={null} // No button in table header
           editPath="/partners/edit"
         />
       </div>

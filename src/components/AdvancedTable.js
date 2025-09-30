@@ -7,7 +7,7 @@ import Link from 'next/link';
 // NOTA IMPORTANTE: La importación de AddButton ha sido eliminada de aquí. 
 // Ahora AdvancedTable recibe el botón de acción principal como una prop.
 
-const AdvancedTable = ({ headers, data, title, actionButton, editPath }) => {
+const AdvancedTable = ({ headers, data, title, actionButton, editPath, pageTitle }) => {
   const [sortConfig, setSortConfig] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -75,29 +75,56 @@ const AdvancedTable = ({ headers, data, title, actionButton, editPath }) => {
       <header className="card-header noborder">
         <h4 className="card-title">{title}</h4>
         
-        {/* Usamos tu estructura de grid (12 columnas) para la cabecera */}
-        <div className="grid grid-cols-12 mb-6 space-x-4 gap-5 px-6 mt-6 ">
-          {/* Columna de búsqueda (4/12) */}
-          <div className="col-span-4">
-            {/* Casilla de búsqueda */}
-            <div className="relative">
+        {/* Header with conditional layout */}
+        {(pageTitle || actionButton) ? (
+          <div className="grid grid-cols-12 mb-6 gap-5 px-6 mt-6">
+            {/* Columna del título (3/12) */}
+            <div className="col-span-3">
+              {pageTitle && (
+                <h1 className="text-xl font-bold text-gray-900">{pageTitle}</h1>
+              )}
+            </div>
+
+            {/* Columna de búsqueda (3/12) */}
+            <div className="col-span-3">
+              {/* Casilla de búsqueda */}
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Buscar..."
+                  className="py-2 pl-8 pr-4 text-sm bg-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-900"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <Icon icon="heroicons:magnifying-glass" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+              </div>
+            </div>
+
+            {/* Columna del botón (6/12) - Alineado a la derecha */}
+            <div className="col-span-6 flex justify-end items-center">
+              {/* RENDERIZAMOS EL BOTÓN PASADO COMO PROP */}
+              {actionButton}
+            </div>
+          </div>
+        ) : (
+          <div className="mb-6 px-1 mt-6 flex justify-between items-center">
+            {/* Casilla de búsqueda alineada a la izquierda */}
+            <div className="relative w-fit">
               <input
                 type="text"
                 placeholder="Buscar..."
-                className="py-2 pl-8 pr-4 text-sm bg-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-900"
+                className="py-2 pl-8 pr-4 text-sm text-gray-600 bg-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-slate-900"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
               <Icon icon="heroicons:magnifying-glass" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
             </div>
+            {/* Botón de exportar alineado a la derecha */}
+            <button className="px-3 py-2 text-xs text-gray-700 border border-gray-600 rounded-lg hover:bg-gray-50 transition-colors">
+              Exportar
+            </button>
           </div>
-          
-          {/* Columna del botón (8/12) - Alineado a la derecha */}
-          <div className="col-span-8 flex justify-end items-center space-x-3">
-            {/* RENDERIZAMOS EL BOTÓN PASADO COMO PROP */}
-            {actionButton}
-          </div>
-        </div>
+        )}
       </header>
       
       <div className="card-body px-6 pb-6">
@@ -107,26 +134,33 @@ const AdvancedTable = ({ headers, data, title, actionButton, editPath }) => {
               <table className="min-w-full divide-y divide-slate-100 table-fixed dark:divide-slate-700">
                 <thead className="border-t border-slate-100 dark:border-slate-800 text-slate-700 dark:bg-slate-300">
                   <tr>
-                    {headers.map((header) => (
+                    <th className="px-3 py-2 text-left w-8">
+                      <input type="checkbox" />
+                    </th>
+                    {headers.map((header, index) => (
                       <th
                         key={header.key}
                         scope="col"
-                        className={`table-th ltr:text-left rtl:text-right  cursor-pointer ${header.key === 'imagen' ? 'w-8' : ''}`}
+                        className={`px-3 py-2 text-left cursor-pointer border-r border-slate-300 border-b border-white ${header.key === 'imagen' ? 'w-8' : ''} ${index === headers.length - 1 ? 'border-r-0' : ''}`}
                         onClick={() => requestSort(header.key)}
                       >
-                        {header.label}
-                        <Icon
-                          icon={getArrowIcon(header.key)}
-                          className={`ml-1 ${getArrowIcon(header.key) ? 'inline-block' : 'hidden'}`}
-                        />
+                        {header.key === 'imagen' ? '' : header.label}
+                        {header.key !== 'imagen' && (
+                          <Icon
+                            icon={getArrowIcon(header.key) || 'heroicons:chevron-down'}
+                            className="ml-1 inline-block text-slate-400"
+                          />
+                        )}
                       </th>
                     ))}
-                    <th scope="col" className="table-th ltr:text-left rtl:text-right">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-slate-900 dark:bg-slate-100 dark:divide-slate-700">
+                <tbody className="bg-white">
                   {currentItems.map((row) => (
-                    <tr key={row.id}>
+                    <tr key={row.id} className="border border-gray-200">
+                      <td className="px-3 py-2 text-left">
+                        <input type="checkbox" />
+                      </td>
                       {headers.map((header) => {
                         let cellContent;
                         if (header.key === 'imagen') {
@@ -148,13 +182,13 @@ const AdvancedTable = ({ headers, data, title, actionButton, editPath }) => {
                           } else if (row[header.key] === 'devuelta') {
                             bgClass = 'bg-yellow-200 text-yellow-800';
                           } else if (row[header.key] === 'Activo') {
-                            bgClass = 'bg-emerald-500 text-white';
+                            bgClass = 'bg-green-200 text-green-800';
                           } else if (row[header.key] === 'Inactivo') {
                             bgClass = 'bg-red-500 text-white';
                           }
                           cellContent = (
                             <div
-                              className={`inline-block px-3 min-w-[90px] text-center mx-auto py-1 rounded-[999px] ${bgClass}`}
+                              className={`inline-block px-2 min-w-[70px] text-center mx-auto py-0.5 text-xs rounded-[999px] ${bgClass}`}
                             >
                               {row[header.key]}
                             </div>
@@ -179,33 +213,20 @@ const AdvancedTable = ({ headers, data, title, actionButton, editPath }) => {
                             </span>
                           );
                         }
+                        // Make name columns clickable
+                        if (header.key === 'partner' || header.key === 'cuenta' || header.key === 'empresa' || header.key === 'nombre' || header.key === 'numeroFactura') {
+                          cellContent = (
+                            <Link href={`${editPath}/${row.id}`}>
+                              {cellContent}
+                            </Link>
+                          );
+                        }
                         return (
-                          <td key={header.key} className="table-td">
+                          <td key={header.key} className="px-3 py-2">
                             {cellContent}
                           </td>
                         );
                       })}
-                      <td className="table-td">
-                        <div className="flex space-x-3 rtl:space-x-reverse">
-                          <button className="action-btn text-blue-500 hover:text-blue-700" type="button">
-                            <Icon icon="heroicons:eye" />
-                          </button>
-                          {editPath ? (
-                            <Link href={`${editPath}/${row.id}`}>
-                              <button className="action-btn text-yellow-500 hover:text-yellow-700" type="button">
-                                <Icon icon="heroicons:pencil-square" />
-                              </button>
-                            </Link>
-                          ) : (
-                            <button className="action-btn text-yellow-500 hover:text-yellow-700" type="button">
-                              <Icon icon="heroicons:pencil-square" />
-                            </button>
-                          )}
-                          <button className="action-btn text-red-500 hover:text-red-700" type="button">
-                            <Icon icon="heroicons:trash" />
-                          </button>
-                        </div>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -221,7 +242,7 @@ const AdvancedTable = ({ headers, data, title, actionButton, editPath }) => {
             <select
               value={itemsPerPage}
               onChange={handleItemsPerPageChange}
-              className="form-control border border-slate-300 rounded-md p-1 text-sm"
+              className="form-control border border-slate-300 rounded-md p-1 text-sm text-gray-600"
             >
               <option value="10">10</option>
               <option value="25">25</option>

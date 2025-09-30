@@ -6,11 +6,10 @@ import AddButton from '../../components/AddButton'; // 1. Importar el componente
 import RefreshButton from '../../components/RefreshButton'; // Importar el botón de refrescar
 import { useState, useEffect } from 'react';
 
-// Encabezados de la tabla para los Clientes (sin cambios)
-const clientesHeaders = [
-  { label: 'ID', key: 'id' },
+// Encabezados de la tabla para los Cuentas
+const cuentasHeaders = [
   { label: 'Imagen', key: 'imagen' },
-  { label: 'Cliente', key: 'cliente' },
+  { label: 'Cuenta', key: 'cuenta' },
   { label: 'Empresa', key: 'empresa' },
   { label: 'Email', key: 'email' },
   { label: 'Teléfono', key: 'telefono' },
@@ -19,7 +18,7 @@ const clientesHeaders = [
   { label: 'Servicios', key: 'modulo' },
 ];
 
-const ClientesPage = () => {
+const CuentasPage = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -35,28 +34,28 @@ const ClientesPage = () => {
   useEffect(() => {
     if (!user) return;
 
-    async function fetchClientes() {
+    async function fetchCuentas() {
       try {
-        // Simulación de fetch a una API para obtener datos de clientes
-        const response = await fetch('/api/clientes');
+        // Simulación de fetch a una API para obtener datos de cuentas
+        const response = await fetch('/api/cuentas');
         if (!response.ok) {
-          throw new Error('No se pudo obtener la lista de clientes');
+          throw new Error('No se pudo obtener la lista de cuentas');
         }
-        const clientesData = await response.json();
+        const cuentasData = await response.json();
         // Filter based on user role
-        let filteredData = clientesData;
+        let filteredData = cuentasData;
         if (user.role === 'partner') {
-          filteredData = clientesData.filter(cliente => cliente.partnerRecordId === user.partner?.id);
+          filteredData = cuentasData.filter(cuenta => cuenta.partnerRecordId === user.partner?.id);
         }
         // Format fechaAlta to DD-MM-YYYY and modulo to string, email to lowercase
-        const formattedData = filteredData.map(cliente => ({
-          ...cliente,
-          email: cliente.email.toLowerCase(),
-          fechaAlta: cliente.fechaAlta ? (() => {
-            const date = new Date(cliente.fechaAlta);
+        const formattedData = filteredData.map(cuenta => ({
+          ...cuenta,
+          email: cuenta.email.toLowerCase(),
+          fechaAlta: cuenta.fechaAlta ? (() => {
+            const date = new Date(cuenta.fechaAlta);
             return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
-          })() : cliente.fechaAlta,
-          modulo: cliente.modulo || []
+          })() : cuenta.fechaAlta,
+          modulo: cuenta.modulo || []
         }));
         setData(formattedData);
       } catch (error) {
@@ -65,37 +64,38 @@ const ClientesPage = () => {
         setLoading(false);
       }
     }
-    fetchClientes();
+    fetchCuentas();
   }, [user, refreshTrigger]); // Depend on user and refreshTrigger
 
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="text-center p-8">Cargando clientes...</div>
+        <div className="text-center p-8">Cargando cuentas...</div>
       </DashboardLayout>
     );
   }
 
   return (
     <DashboardLayout>
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Gestión de Clientes</h1>
+      <div className="flex justify-between items-center mb-4 w-[96%] mx-auto">
+        <h1 className="text-xl font-bold text-gray-900">Cuentas <span className="text-sm text-gray-600 ml-2">{data.length} registros</span></h1>
+        <div className="flex space-x-3">
+          <RefreshButton onClick={() => setRefreshTrigger(prev => prev + 1)} />
+          <AddButton />
+        </div>
+      </div>
+      <div className="bg-white p-6 rounded-lg shadow-md w-[96%] mx-auto">
         {/* 2. Pasamos AddButton como prop actionButton a AdvancedTable */}
         <AdvancedTable
           title=""
-          headers={clientesHeaders}
+          headers={cuentasHeaders}
           data={data}
-          actionButton={
-            <div className="flex space-x-3">
-              <RefreshButton onClick={() => setRefreshTrigger(prev => prev + 1)} />
-              <AddButton />
-            </div>
-          }
-          editPath="/clientes/edit" // Partners pueden editar sus clientes
+          actionButton={null}
+          editPath="/cuentas/edit" // Partners pueden editar sus cuentas
         />
       </div>
     </DashboardLayout>
   );
 };
 
-export default ClientesPage;
+export default CuentasPage;

@@ -8,7 +8,6 @@ import { useState, useEffect } from 'react';
 
 // Encabezados de la tabla para las Empresas
 const empresasHeaders = [
-  { label: 'ID', key: 'id' },
   { label: 'Empresa', key: 'empresa' },
   { label: 'Email', key: 'email' },
   { label: 'Teléfono', key: 'telefono' },
@@ -69,18 +68,19 @@ const EmpresasPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="bg-white p-6 rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Gestión de Empresas</h1>
+      <div className="flex justify-between items-center mb-4 w-[96%] mx-auto">
+        <h1 className="text-xl font-bold text-gray-900">Empresas <span className="text-sm text-gray-600 ml-2">{data.length} registros</span></h1>
+        <div className="flex space-x-3">
+          <RefreshButton onClick={() => setRefreshTrigger(prev => prev + 1)} />
+          <AddButton />
+        </div>
+      </div>
+      <div className="bg-white p-6 rounded-lg shadow-md w-[96%] mx-auto">
         <AdvancedTable
           title=""
           headers={empresasHeaders}
           data={data}
-          actionButton={
-            <div className="flex space-x-3">
-              <RefreshButton onClick={() => setRefreshTrigger(prev => prev + 1)} />
-              <AddButton />
-            </div>
-          }
+          actionButton={null}
           editPath="/empresas/edit"
         />
       </div>

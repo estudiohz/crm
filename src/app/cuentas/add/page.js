@@ -7,19 +7,21 @@ import { useRouter } from 'next/navigation';
 
 // Valores iniciales del formulario
 const initialFormData = {
-  cliente: '',
+  cuenta: '',
+  nombre: '',
+  apellidos: '',
   empresa: '',
   email: '',
   telefono: '',
   password: '',
   confirmPassword: '',
-  imagen: 'https://placehold.co/50x50/3b82f6/FFFFFF?text=CL',
+  imagen: 'https://placehold.co/50x50/3b82f6/FFFFFF?text=CU',
   estado: 'Activo',
   fechaAlta: new Date().toLocaleDateString('es-ES', { year: 'numeric', month: '2-digit', day: '2-digit' }),
   modulo: [],
 };
 
-const AddClientePage = () => {
+const AddCuentaPage = () => {
   const [formData, setFormData] = useState(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
@@ -64,12 +66,25 @@ const AddClientePage = () => {
     }
 
     try {
-      const dataToSend = { ...formData, partnerId: user?.id };
-      if (user && user.role === 'partner') {
+      const dataToSend = {
+        cuenta: formData.cuenta,
+        nombre: formData.nombre,
+        apellidos: formData.apellidos,
+        empresa: formData.empresa,
+        email: formData.email,
+        telefono: formData.telefono,
+        password: formData.password,
+        imagen: formData.imagen,
+        estado: formData.estado,
+        fechaAlta: formData.fechaAlta,
+        modulo: formData.modulo,
+        partnerId: user && user.role === 'partner' ? user.id : null
+      };
+      if (user && user.role === 'partner' && user.partner) {
         dataToSend.partnerRecordId = user.partner.id;
       }
 
-      const response = await fetch('/api/clientes', {
+      const response = await fetch('/api/cuentas', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -78,56 +93,81 @@ const AddClientePage = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Error al añadir el cliente');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al añadir el cuenta');
       }
 
-      const newCliente = await response.json();
-      console.log('Cliente añadido con éxito:', newCliente);
-      
-      setMessage('¡Cliente añadido con éxito! Redireccionando...');
+      const newCuenta = await response.json();
+      console.log('Cuenta añadido con éxito:', newCuenta);
+
+      setMessage('¡Cuenta añadido con éxito! Redireccionando...');
       setTimeout(() => {
-        router.push('/clientes'); // Redirección a la tabla de clientes
+        router.push('/cuentas'); // Redirección a la tabla de cuentas
       }, 1500);
 
     } catch (error) {
       console.error('Error en el envío del formulario:', error);
-      setMessage('Error al añadir el cliente. Inténtalo de nuevo.');
+      setMessage('Error al añadir el cuenta. Inténtalo de nuevo.');
       setIsSubmitting(false);
     }
   };
 
   const BackButton = () => (
     <a
-      href="/clientes"
+      href="/cuentas"
       className="inline-flex items-center space-x-2 text-sm font-medium text-blue-600 hover:text-blue-800 transition duration-150"
     >
       <Icon icon="heroicons:arrow-left" className="w-4 h-4" />
-      <span>Volver a Clientes</span>
+      <span>Volver a Cuentas</span>
     </a>
   );
 
   return (
     <DashboardLayout>
       <div className="min-h-full">
-        <div className="mb-6">
+        <div className="mb-6 flex justify-between items-center w-[90%] mx-auto">
+          <h1 className="text-xl font-bold text-slate-900">Añadir Nueva Cuenta</h1>
           <BackButton />
-          <h1 className="text-3xl font-bold text-slate-900 mt-2">Añadir Nuevo Cliente</h1>
-          <p className="text-slate-600">Completa la información para registrar un nuevo cliente.</p>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-100 max-w-4xl mx-auto">
+        <div className="bg-white p-6 rounded-lg shadow-md w-[96%] mx-auto">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Los campos del formulario van aquí */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Nombre de la Cuenta */}
+            <div>
+              <label htmlFor="cuenta" className="block text-sm font-medium text-slate-700 mb-1">Nombre de la Cuenta</label>
+              <input type="text" id="cuenta" name="cuenta" value={formData.cuenta} onChange={handleChange} required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="Ej. Ana García" />
+            </div>
+
+            {/* Nombre y Apellidos */}
+            <div className="grid grid-cols-2 gap-6">
               <div>
-                <label htmlFor="cliente" className="block text-sm font-medium text-slate-700 mb-1">Nombre del Cliente</label>
-                <input type="text" id="cliente" name="cliente" value={formData.cliente} onChange={handleChange} required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="Ej. Ana García" />
+                <label htmlFor="nombre" className="block text-sm font-medium text-slate-700 mb-1">Nombre</label>
+                <input type="text" id="nombre" name="nombre" value={formData.nombre} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="Ana" />
               </div>
+              <div>
+                <label htmlFor="apellidos" className="block text-sm font-medium text-slate-700 mb-1">Apellidos</label>
+                <input type="text" id="apellidos" name="apellidos" value={formData.apellidos} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="García López" />
+              </div>
+            </div>
+
+            {/* Empresa y Estado */}
+            <div className="grid grid-cols-2 gap-6">
               <div>
                 <label htmlFor="empresa" className="block text-sm font-medium text-slate-700 mb-1">Empresa</label>
                 <input type="text" id="empresa" name="empresa" value={formData.empresa} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 text-slate-700 focus:border-blue-500 transition duration-150" placeholder="Ej. Acme Corp." />
               </div>
+              <div>
+                <label htmlFor="estado" className="block text-sm font-medium text-slate-700 mb-1">Estado</label>
+                <select id="estado" name="estado" value={formData.estado} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700">
+                  <option value="Activo">Activo</option>
+                  <option value="Inactivo">Inactivo</option>
+                  <option value="Lead">Lead</option>
+                  <option value="Potencial">Potencial</option>
+                </select>
+              </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* Email y Teléfono */}
+            <div className="grid grid-cols-2 gap-6">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
                 <input type="email" id="email" name="email" value={formData.email} onChange={handleChange} required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="ejemplo@acme.com" />
@@ -137,7 +177,9 @@ const AddClientePage = () => {
                 <input type="tel" id="telefono" name="telefono" value={formData.telefono} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="+34 900 111 222" />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* Contraseña y Confirmar Contraseña */}
+            <div className="grid grid-cols-2 gap-6">
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">Contraseña</label>
                 <div className="relative">
@@ -157,37 +199,17 @@ const AddClientePage = () => {
                 <input type="password" id="confirmPassword" name="confirmPassword" value={formData.confirmPassword} onChange={handleChange} required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="••••••••" />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* URL de Imagen y Fecha de Alta */}
+            <div className="grid grid-cols-2 gap-6">
               <div>
-                <label htmlFor="estado" className="block text-sm font-medium text-slate-700 mb-1">Estado</label>
-                <select id="estado" name="estado" value={formData.estado} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700">
-                  <option value="Activo">Activo</option>
-                  <option value="Inactivo">Inactivo</option>
-                  <option value="Lead">Lead</option>
-                  <option value="Potencial">Potencial</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="imagen" className="block text-sm font-medium text-slate-700 mb-1">URL de Imagen (Perfil)</label>
+                <label htmlFor="imagen" className="block text-sm font-medium text-slate-700 mb-1">URL de Imagen de Perfil</label>
                 <input type="url" id="imagen" name="imagen" value={formData.imagen} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="https://..." />
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">Módulos</label>
-              <div className="space-y-2">
-                <label className="flex items-center">
-                  <input type="checkbox" value="Crm" checked={formData.modulo.includes('Crm')} onChange={handleCheckboxChange} className="mr-2" />
-                  Crm
-                </label>
-                <label className="flex items-center">
-                  <input type="checkbox" value="invoices" checked={formData.modulo.includes('invoices')} onChange={handleCheckboxChange} className="mr-2" />
-                  Invoices
-                </label>
+              <div>
+                <label htmlFor="fechaAlta" className="block text-sm font-medium text-slate-700 mb-1">Fecha de Alta</label>
+                <input type="text" id="fechaAlta" name="fechaAlta" value={formData.fechaAlta} readOnly className="w-full px-4 py-2 border border-slate-200 bg-slate-50 rounded-lg text-slate-500 cursor-not-allowed" />
               </div>
-            </div>
-            <div>
-              <label htmlFor="fechaAlta" className="block text-sm font-medium text-slate-700 mb-1">Fecha de alta</label>
-              <input type="text" id="fechaAlta" name="fechaAlta" value={formData.fechaAlta} readOnly className="w-full px-4 py-2 border border-slate-200 bg-slate-50 rounded-lg text-slate-500 cursor-not-allowed" />
             </div>
             {message && (
               <div className={`mt-4 p-3 rounded-lg text-sm font-semibold ${message.includes('éxito') ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
@@ -197,7 +219,7 @@ const AddClientePage = () => {
             <div className="flex justify-end space-x-3 pt-4">
               <button type="button" onClick={() => setFormData(initialFormData)} className="btn px-4 py-2 border border-slate-300 text-slate-700 rounded-md hover:bg-slate-100 transition-colors duration-200 font-semibold text-sm">Cancelar</button>
               <button type="submit" disabled={isSubmitting} className="btn bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md font-semibold text-sm transition-colors duration-200 shadow-md flex items-center space-x-1 disabled:opacity-50">
-                {isSubmitting ? (<><Icon icon="heroicons:arrow-path" className="w-5 h-5 animate-spin" /><span>Guardando...</span></>) : (<><Icon icon="heroicons:check-circle" className="w-5 h-5" /><span>Guardar Cliente</span></>)}
+                {isSubmitting ? (<><Icon icon="heroicons:arrow-path" className="w-5 h-5 animate-spin" /><span>Guardando...</span></>) : (<><Icon icon="heroicons:check-circle" className="w-5 h-5" /><span>Guardar Cuenta</span></>)}
               </button>
             </div>
           </form>
@@ -207,4 +229,4 @@ const AddClientePage = () => {
   );
 };
 
-export default AddClientePage;
+export default AddCuentaPage;
