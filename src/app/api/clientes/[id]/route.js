@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 // Función para obtener un cliente por ID
 export async function GET(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const cliente = await prisma.cliente.findUnique({
       where: { id: parseInt(id) },
     });

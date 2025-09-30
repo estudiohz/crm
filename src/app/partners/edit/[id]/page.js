@@ -27,9 +27,42 @@ const EditPartnerPage = () => {
   const [loading, setLoading] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [clients, setClients] = useState([]);
+  const [user, setUser] = useState(null);
+  const [empresas, setEmpresas] = useState([]);
+  const [empresaSearch, setEmpresaSearch] = useState('');
+  const [filteredEmpresas, setFilteredEmpresas] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showNewForm, setShowNewForm] = useState(false);
+  const [newEmpresaData, setNewEmpresaData] = useState({ empresa: '', email: '', telefono: '', estado: 'Activo' });
   const router = useRouter();
   const params = useParams();
   const id = params.id;
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchEmpresas = async () => {
+      try {
+        const response = await fetch(`/api/empresas?userId=${user.id}`);
+        if (response.ok) {
+          const empresasData = await response.json();
+          setEmpresas(empresasData);
+        } else {
+          console.error('Error fetching empresas');
+        }
+      } catch (error) {
+        console.error('Error fetching empresas:', error);
+      }
+    };
+    fetchEmpresas();
+  }, [user]);
 
   useEffect(() => {
     async function fetchPartner() {
@@ -49,6 +82,7 @@ const EditPartnerPage = () => {
           fechaAlta: formattedFecha,
           clients: partnerData.clientes ? partnerData.clientes.map(c => c.id) : [],
         });
+        setEmpresaSearch(partnerData.empresa || '');
       } catch (error) {
         console.error('Error fetching partner:', error);
         setMessage('Error al cargar el partner.');
@@ -88,6 +122,58 @@ const EditPartnerPage = () => {
       ...prevData,
       [name]: finalValue,
     }));
+  };
+
+  const handleEmpresaSearch = (e) => {
+    const value = e.target.value;
+    setEmpresaSearch(value);
+    setFormData((prevData) => ({
+      ...prevData,
+      empresa: value,
+    }));
+    const filtered = empresas.filter(emp => emp.empresa.toLowerCase().includes(value.toLowerCase()));
+    setFilteredEmpresas(filtered);
+    setShowDropdown(true);
+  };
+
+  const selectEmpresa = (empresa) => {
+    setEmpresaSearch(empresa.empresa);
+    setFormData((prevData) => ({
+      ...prevData,
+      empresa: empresa.empresa,
+    }));
+    setShowDropdown(false);
+  };
+
+  const handleNewEmpresaChange = (e) => {
+    const { name, value } = e.target;
+    setNewEmpresaData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
+  const saveNewEmpresa = async () => {
+    if (!user) return;
+    try {
+      const response = await fetch('/api/empresas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newEmpresaData, userId: user.id }),
+      });
+      if (response.ok) {
+        const newEmp = await response.json();
+        setEmpresas([...empresas, newEmp]);
+        selectEmpresa(newEmp);
+        setShowNewForm(false);
+        setNewEmpresaData({ empresa: '', email: '', telefono: '', estado: 'Activo' });
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || 'Error al crear empresa');
+      }
+    } catch (error) {
+      console.error('Error saving new empresa:', error);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -164,7 +250,95 @@ const EditPartnerPage = () => {
               </div>
               <div>
                 <label htmlFor="empresa" className="block text-sm font-medium text-slate-700 mb-1">Empresa</label>
-                <input type="text" id="empresa" name="empresa" value={formData.empresa} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 text-slate-700 focus:border-blue-500 transition duration-150" placeholder="Ej. Synergy Hub" />
+                <input
+                  type="text"
+                  id="empresa"
+                  name="empresa"
+                  value={empresaSearch}
+                  onChange={handleEmpresaSearch}
+                  onFocus={() => setShowDropdown(true)}
+                  onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700"
+                  placeholder="Buscar empresa..."
+                />
+                {showDropdown && (
+                  <div className="absolute z-10 w-full bg-white border border-slate-300 rounded-lg mt-1 max-h-40 overflow-y-auto shadow-lg">
+                    {filteredEmpresas.map(empresa => (
+                      <div
+                        key={empresa.id}
+                        onClick={() => selectEmpresa(empresa)}
+                        className="px-4 py-2 hover:bg-slate-100 cursor-pointer"
+                      >
+                        {empresa.empresa}
+                      </div>
+                    ))}
+                    {empresaSearch && !filteredEmpresas.find(e => e.empresa.toLowerCase() === empresaSearch.toLowerCase()) && (
+                      <div
+                        onClick={() => { setNewEmpresaData({ ...newEmpresaData, empresa: empresaSearch }); setShowNewForm(true); setShowDropdown(false); }}
+                        className="px-4 py-2 hover:bg-slate-100 cursor-pointer text-blue-600 flex justify-between items-center"
+                      >
+                        <span>Crear nueva empresa: {empresaSearch}</span>
+                        <span className="bg-blue-500 text-white px-2 py-1 rounded text-xs">Nuevo</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {showNewForm && (
+                  <div className="mt-4 p-4 bg-slate-50 border border-slate-300 rounded-lg">
+                    <h3 className="text-sm font-medium text-slate-700 mb-2">Crear Nueva Empresa</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <input
+                        type="text"
+                        name="empresa"
+                        value={newEmpresaData.empresa}
+                        onChange={handleNewEmpresaChange}
+                        placeholder="Nombre empresa"
+                        className="px-3 py-2 border border-slate-300 rounded text-sm"
+                      />
+                      <input
+                        type="email"
+                        name="email"
+                        value={newEmpresaData.email}
+                        onChange={handleNewEmpresaChange}
+                        placeholder="Email"
+                        className="px-3 py-2 border border-slate-300 rounded text-sm"
+                      />
+                      <input
+                        type="tel"
+                        name="telefono"
+                        value={newEmpresaData.telefono}
+                        onChange={handleNewEmpresaChange}
+                        placeholder="Teléfono"
+                        className="px-3 py-2 border border-slate-300 rounded text-sm"
+                      />
+                      <select
+                        name="estado"
+                        value={newEmpresaData.estado}
+                        onChange={handleNewEmpresaChange}
+                        className="px-3 py-2 border border-slate-300 rounded text-sm"
+                      >
+                        <option value="Activo">Activo</option>
+                        <option value="Inactivo">Inactivo</option>
+                      </select>
+                    </div>
+                    <div className="flex justify-end space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowNewForm(false)}
+                        className="px-3 py-1 border border-slate-300 text-slate-700 rounded text-sm hover:bg-slate-100"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={saveNewEmpresa}
+                        className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                      >
+                        Guardar
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

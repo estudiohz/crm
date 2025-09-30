@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 // Función para obtener un partner por ID
 export async function GET(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const partner = await prisma.partner.findUnique({
       where: { id: parseInt(id) },
       include: {
@@ -28,7 +28,7 @@ export async function GET(request, { params }) {
 // Función para eliminar un partner por ID
 export async function DELETE(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     // Primero, desasociar clientes
     await prisma.cliente.updateMany({

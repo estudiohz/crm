@@ -12,7 +12,7 @@ export async function POST(request) {
     console.log('Datos recibidos del frontend:', body);
     
     // Desestructuración de los datos
-    const { cliente, empresa, email, telefono, password, imagen, estado, fechaAlta, modulo, partnerRecordId } = body;
+    const { cliente, empresa, email, telefono, password, imagen, estado, fechaAlta, modulo, partnerRecordId, partnerId } = body;
     const lowerEmail = email.toLowerCase();
 
     // Verificar si el email ya existe
@@ -51,6 +51,7 @@ export async function POST(request) {
         fechaAlta: formattedDate, // Asegúrate de que el tipo de datos coincida con tu esquema de Prisma
         modulo,
         partnerRecordId: partnerRecordId || null,
+        partnerId: partnerId || null,
       },
     });
 
@@ -66,9 +67,18 @@ export async function POST(request) {
 }
 
 // Asegúrate de tener también la función GET para obtener los clientes
-export async function GET() {
+export async function GET(request) {
   try {
-    const clientes = await prisma.cliente.findMany();
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+
+    let where = {};
+    if (userId) {
+      // Filter by partnerId for the user's clientes
+      where.partnerId = userId;
+    }
+
+    const clientes = await prisma.cliente.findMany({ where });
     return NextResponse.json(clientes, { status: 200 });
   } catch (error) {
     console.error('Error al obtener clientes:', error);
@@ -82,7 +92,7 @@ export async function PUT(request) {
     const body = await request.json();
     console.log('Datos recibidos para actualizar:', body);
 
-    const { id, cliente, empresa, email, telefono, password, imagen, estado, fechaAlta, modulo } = body;
+    const { id, cliente, empresa, email, telefono, password, imagen, estado, fechaAlta, modulo, partnerId } = body;
     const lowerEmail = email.toLowerCase();
 
     // Obtener el cliente actual para el email antiguo
@@ -149,6 +159,7 @@ export async function PUT(request) {
         estado,
         fechaAlta: formattedDate,
         modulo,
+        partnerId: partnerId || undefined,
       },
     });
 

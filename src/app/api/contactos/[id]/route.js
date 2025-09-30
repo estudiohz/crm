@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 // Función para obtener un contacto por ID
 export async function GET(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const contacto = await prisma.contacto.findUnique({
       where: { id: parseInt(id) },
     });
@@ -25,7 +25,7 @@ export async function GET(request, { params }) {
 // Función para eliminar un contacto por ID
 export async function DELETE(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const deletedContacto = await prisma.contacto.delete({
       where: { id: parseInt(id) },
     });

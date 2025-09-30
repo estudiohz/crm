@@ -18,6 +18,8 @@ export default function AddButton() {
   const lowerPathname = pathname.toLowerCase();
   const isPartnerMode = lowerPathname.includes('/partners');
   const isContactosMode = lowerPathname.includes('/contactos');
+  const isEmpresasMode = lowerPathname.includes('/empresas');
+  const isFacturasMode = lowerPathname.includes('/facturas');
 
   // 1. Definir el texto del botón
   let buttonText = 'Añadir Cliente';
@@ -25,6 +27,10 @@ export default function AddButton() {
     buttonText = 'Añadir Partner';
   } else if (isContactosMode) {
     buttonText = 'Añadir Contacto';
+  } else if (isEmpresasMode) {
+    buttonText = 'Añadir Empresa';
+  } else if (isFacturasMode) {
+    buttonText = 'Añadir Factura';
   }
 
   // 2. Definir el enlace de destino.
@@ -33,6 +39,10 @@ export default function AddButton() {
     targetLink = '/partners/add';
   } else if (isContactosMode) {
     targetLink = '/contactos/add';
+  } else if (isEmpresasMode) {
+    targetLink = '/empresas/add';
+  } else if (isFacturasMode) {
+    targetLink = '/facturas/add';
   }
 
   return (

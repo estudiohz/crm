@@ -2,28 +2,26 @@
 
 import DashboardLayout from '../../components/DashboardLayout';
 import AdvancedTable from '../../components/AdvancedTable';
-import AddButton from '../../components/AddButton'; // 1. Importar el componente del botón
-import RefreshButton from '../../components/RefreshButton'; // Importar el botón de refrescar
+import AddButton from '../../components/AddButton';
+import RefreshButton from '../../components/RefreshButton';
 import { useState, useEffect } from 'react';
 
-// Encabezados de la tabla para los Contactos
-const contactosHeaders = [
+// Encabezados de la tabla para las Empresas
+const empresasHeaders = [
   { label: 'ID', key: 'id' },
-  { label: 'Nombre', key: 'nombre' },
-  { label: 'Apellidos', key: 'apellidos' },
+  { label: 'Empresa', key: 'empresa' },
   { label: 'Email', key: 'email' },
   { label: 'Teléfono', key: 'telefono' },
-  { label: 'Empresa', key: 'empresa' },
   { label: 'Estado', key: 'estado' },
   { label: 'Fecha creación', key: 'fechaCreacion' },
-  { label: 'Origen', key: 'origen' },
+  { label: 'Comunidad', key: 'comunidad' },
 ];
 
-const ContactosPage = () => {
+const EmpresasPage = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [user, setUser] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -35,22 +33,21 @@ const ContactosPage = () => {
   useEffect(() => {
     if (!user) return;
 
-    async function fetchContactos() {
+    async function fetchEmpresas() {
       try {
-        // Fetch a la API para obtener datos de contactos
-        const response = await fetch(`/api/contactos?userId=${user.id}`);
+        // Fetch a la API para obtener datos de empresas
+        const response = await fetch(`/api/empresas?userId=${user.id}`);
         if (!response.ok) {
-          throw new Error('No se pudo obtener la lista de contactos');
+          throw new Error('No se pudo obtener la lista de empresas');
         }
-        const contactosData = await response.json();
-        // Format fechaCreacion to DD-MM-YYYY, email to lowercase
-        const formattedData = contactosData.map(contacto => ({
-          ...contacto,
-          email: contacto.email.toLowerCase(),
-          fechaCreacion: contacto.fechaCreacion ? (() => {
-            const date = new Date(contacto.fechaCreacion);
+        const empresasData = await response.json();
+        // Format fechaCreacion to DD-MM-YYYY
+        const formattedData = empresasData.map(empresa => ({
+          ...empresa,
+          fechaCreacion: empresa.fechaCreacion ? (() => {
+            const date = new Date(empresa.fechaCreacion);
             return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
-          })() : contacto.fechaCreacion,
+          })() : empresa.fechaCreacion,
         }));
         setData(formattedData);
       } catch (error) {
@@ -59,13 +56,13 @@ const ContactosPage = () => {
         setLoading(false);
       }
     }
-    fetchContactos();
-  }, [refreshTrigger, user]); // Depend on refreshTrigger and user
+    fetchEmpresas();
+  }, [user, refreshTrigger]);
 
   if (loading) {
     return (
       <DashboardLayout>
-        <div className="text-center p-8">Cargando contactos...</div>
+        <div className="text-center p-8">Cargando empresas...</div>
       </DashboardLayout>
     );
   }
@@ -73,11 +70,10 @@ const ContactosPage = () => {
   return (
     <DashboardLayout>
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">Gestión de Contactos</h1>
-        {/* 2. Pasamos AddButton como prop actionButton a AdvancedTable */}
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">Gestión de Empresas</h1>
         <AdvancedTable
           title=""
-          headers={contactosHeaders}
+          headers={empresasHeaders}
           data={data}
           actionButton={
             <div className="flex space-x-3">
@@ -85,11 +81,11 @@ const ContactosPage = () => {
               <AddButton />
             </div>
           }
-          editPath="/contactos/edit"
+          editPath="/empresas/edit"
         />
       </div>
     </DashboardLayout>
   );
 };
 
-export default ContactosPage;
+export default EmpresasPage;

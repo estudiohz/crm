@@ -64,7 +64,7 @@ const AddClientePage = () => {
     }
 
     try {
-      const dataToSend = { ...formData };
+      const dataToSend = { ...formData, partnerId: user?.id };
       if (user && user.role === 'partner') {
         dataToSend.partnerRecordId = user.partner.id;
       }

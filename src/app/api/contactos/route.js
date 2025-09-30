@@ -4,9 +4,18 @@ import prisma from '../../../../prisma/client';
 import { NextResponse } from 'next/server';
 
 // Función para manejar las solicitudes GET (obtener contactos)
-export async function GET() {
+export async function GET(request) {
   try {
-    const contactos = await prisma.contacto.findMany();
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+
+    if (!userId) {
+      return NextResponse.json([], { status: 200 });
+    }
+
+    const contactos = await prisma.contacto.findMany({
+      where: { userId }
+    });
     return NextResponse.json(contactos, { status: 200 });
   } catch (error) {
     console.error('Error al obtener contactos:', error);
@@ -21,15 +30,26 @@ export async function POST(request) {
     console.log('Datos recibidos del frontend:', body);
 
     // Desestructuración de los datos
-    const { nombre, apellidos, email, telefono, empresa, estado, fechaCreacion, origen } = body;
+    const { nombre, apellidos, email, telefono, empresa, estado, fechaCreacion, origen, direccion, localidad, comunidad, pais, cp, userId } = body;
     const lowerEmail = email.toLowerCase();
 
-    // Verificar si el email ya existe
+    // Verificar si el email ya existe para este usuario
     const existingContacto = await prisma.contacto.findFirst({
-      where: { email: lowerEmail },
+      where: { email: lowerEmail, userId },
     });
     if (existingContacto) {
-      return NextResponse.json({ message: 'El email ya está registrado.' }, { status: 400 });
+      return NextResponse.json({ message: 'El email ya está registrado para este usuario.' }, { status: 400 });
+    }
+
+    // Buscar empresaId si empresa es proporcionada
+    let empresaId = null;
+    if (empresa) {
+      const empresaRecord = await prisma.empresa.findFirst({
+        where: { empresa, userId },
+      });
+      if (empresaRecord) {
+        empresaId = empresaRecord.id;
+      }
     }
 
     // Convertir el formato de fecha de 'DD/MM/YYYY' a 'YYYY-MM-DD' si se proporciona
@@ -49,6 +69,13 @@ export async function POST(request) {
         estado,
         fechaCreacion: formattedDate,
         origen,
+        direccion,
+        localidad,
+        comunidad,
+        pais,
+        cp,
+        userId,
+        empresaId,
       },
     });
 
@@ -69,8 +96,31 @@ export async function PUT(request) {
     const body = await request.json();
     console.log('Datos recibidos para actualizar:', body);
 
-    const { id, nombre, apellidos, email, telefono, empresa, estado, fechaCreacion, origen } = body;
+    const { id, nombre, apellidos, email, telefono, empresa, estado, fechaCreacion, origen, direccion, localidad, comunidad, pais, cp, userId } = body;
     const lowerEmail = email.toLowerCase();
+
+    // Verificar si el email ya existe para este usuario (excluyendo el contacto actual)
+    const existingContacto = await prisma.contacto.findFirst({
+      where: {
+        email: lowerEmail,
+        userId,
+        NOT: { id: parseInt(id) }
+      },
+    });
+    if (existingContacto) {
+      return NextResponse.json({ message: 'El email ya está registrado para este usuario.' }, { status: 400 });
+    }
+
+    // Buscar empresaId si empresa es proporcionada
+    let empresaId = null;
+    if (empresa) {
+      const empresaRecord = await prisma.empresa.findFirst({
+        where: { empresa, userId },
+      });
+      if (empresaRecord) {
+        empresaId = empresaRecord.id;
+      }
+    }
 
     // Convertir el formato de fecha de 'DD/MM/YYYY' a 'YYYY-MM-DD'
     const [day, month, year] = fechaCreacion.split('/');
@@ -87,6 +137,13 @@ export async function PUT(request) {
         estado,
         fechaCreacion: formattedDate,
         origen,
+        direccion,
+        localidad,
+        comunidad,
+        pais,
+        cp,
+        user: { connect: { id: userId } },
+        ...(empresaId && { empresaRecord: { connect: { id: empresaId } } }),
       },
     });
 

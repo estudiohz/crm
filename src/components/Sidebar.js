@@ -13,7 +13,7 @@ const Sidebar = () => {
   const pathname = usePathname();
 
   const isPartnerActive = pathname.startsWith('/clientes') || pathname.startsWith('/partners');
-  const isModulosActive = pathname.startsWith('/contactos') || pathname.startsWith('/facturacion');
+  const isModulosActive = pathname.startsWith('/contactos') || pathname.startsWith('/empresas') || pathname.startsWith('/facturas');
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -69,9 +69,15 @@ const Sidebar = () => {
                   </Link>
                 </li>
                 <li className="mb-2">
-                  <Link href="/facturacion" className="flex items-center p-2 rounded hover:bg-gray-700">
+                  <Link href="/empresas" className="flex items-center p-2 rounded hover:bg-gray-700">
+                    <Icon icon="heroicons:building-office-2" className="w-4 h-4 mr-2" />
+                    CRM - Empresas
+                  </Link>
+                </li>
+                <li className="mb-2">
+                  <Link href="/facturas" className="flex items-center p-2 rounded hover:bg-gray-700">
                     <Icon icon="heroicons:document-text" className="w-4 h-4 mr-2" />
-                    Facturación
+                    Facturas
                   </Link>
                 </li>
               </ul>
@@ -90,20 +96,26 @@ const Sidebar = () => {
             </Link>
           </li>
           {modulo.includes('Crm') && (
-            <li className="mb-2">
-              <Link href="/contactos" className="flex items-center p-2 rounded hover:bg-gray-700">
-                <Icon icon="heroicons:user-group" className="w-5 h-5 mr-2" />
-                Contactos
-              </Link>
-            </li>
-          )}
-          {modulo.includes('invoices') && (
-            <li className="mb-2">
-              <Link href="/facturacion" className="flex items-center p-2 rounded hover:bg-gray-700">
-                <Icon icon="heroicons:document-text" className="w-5 h-5 mr-2" />
-                Facturacion
-              </Link>
-            </li>
+            <>
+              <li className="mb-2">
+                <Link href="/contactos" className="flex items-center p-2 rounded hover:bg-gray-700">
+                  <Icon icon="heroicons:user-group" className="w-5 h-5 mr-2" />
+                  Contactos
+                </Link>
+              </li>
+              <li className="mb-2">
+                <Link href="/empresas" className="flex items-center p-2 rounded hover:bg-gray-700">
+                  <Icon icon="heroicons:building-office-2" className="w-4 h-4 mr-2" />
+                  Empresas
+                </Link>
+              </li>
+              <li className="mb-2">
+                <Link href="/facturas" className="flex items-center p-2 rounded hover:bg-gray-700">
+                  <Icon icon="heroicons:document-text" className="w-4 h-4 mr-2" />
+                  Facturas
+                </Link>
+              </li>
+            </>
           )}
         </ul>
       );
@@ -157,6 +169,12 @@ const Sidebar = () => {
                   <Link href="/contactos" className="flex items-center p-2 rounded hover:bg-gray-700">
                     <Icon icon="heroicons:user-group" className="w-4 h-4 mr-2" />
                     CRM - Contactos
+                  </Link>
+                </li>
+                <li className="mb-2">
+                  <Link href="/empresas" className="flex items-center p-2 rounded hover:bg-gray-700">
+                    <Icon icon="heroicons:building-office-2" className="w-4 h-4 mr-2" />
+                    CRM - Empresas
                   </Link>
                 </li>
                 <li className="mb-2">

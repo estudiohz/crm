@@ -142,13 +142,19 @@ const AdvancedTable = ({ headers, data, title, actionButton, editPath }) => {
                             </span>
                           );
                         } else if (header.key === 'estado') {
+                          let bgClass = 'bg-gray-200 text-gray-800';
+                          if (row[header.key] === 'abonada') {
+                            bgClass = 'bg-green-200 text-green-800';
+                          } else if (row[header.key] === 'devuelta') {
+                            bgClass = 'bg-yellow-200 text-yellow-800';
+                          } else if (row[header.key] === 'Activo') {
+                            bgClass = 'bg-emerald-500 text-white';
+                          } else if (row[header.key] === 'Inactivo') {
+                            bgClass = 'bg-red-500 text-white';
+                          }
                           cellContent = (
                             <div
-                              className={`inline-block px-3 min-w-[90px] text-center mx-auto py-1 rounded-[999px] ${
-                                row[header.key] === 'Activo'
-                                  ? 'bg-emerald-500 text-white'
-                                  : 'bg-red-500 text-white'
-                              }`}
+                              className={`inline-block px-3 min-w-[90px] text-center mx-auto py-1 rounded-[999px] ${bgClass}`}
                             >
                               {row[header.key]}
                             </div>
