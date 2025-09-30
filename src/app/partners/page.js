@@ -4,6 +4,7 @@ import DashboardLayout from '../../components/DashboardLayout';
 import AdvancedTable from '../../components/AdvancedTable';
 import AddButton from '../../components/AddButton'; // Componente dinámico para Añadir Partner
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 // Encabezados de la tabla para los Partners
 const partnersHeaders = [
@@ -20,35 +21,37 @@ const partnersHeaders = [
 const PartnersPage = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  const fetchPartners = async () => {
+    try {
+      // CORRECCIÓN: La ruta de la API debe ser '/api/partner' (singular), ya que el Route Handler está en src/app/api/partner/route.js
+      console.log('Starting fetch for partners from /api/partner');
+      const response = await fetch('/api/partner');
+      console.log('Fetch response status:', response.status);
+      if (!response.ok) {
+        throw new Error('No se pudo obtener la lista de partners');
+      }
+      const partnersData = await response.json();
+      console.log('Fetched partners data:', partnersData);
+      console.log('Sample partner object:', partnersData[0] || 'No data');
+      // Format fechaAlta to DD-MM-YYYY
+      const formattedData = partnersData.map(partner => ({
+        ...partner,
+        fechaAlta: partner.fechaAlta ? (() => {
+          const date = new Date(partner.fechaAlta);
+          return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
+        })() : partner.fechaAlta
+      }));
+      setData(formattedData);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchPartners() {
-      try {
-        // CORRECCIÓN: La ruta de la API debe ser '/api/partner' (singular), ya que el Route Handler está en src/app/api/partner/route.js
-        console.log('Starting fetch for partners from /api/partner');
-        const response = await fetch('/api/partner');
-        console.log('Fetch response status:', response.status);
-        if (!response.ok) {
-          throw new Error('No se pudo obtener la lista de partners');
-        }
-        const partnersData = await response.json();
-        console.log('Fetched partners data:', partnersData);
-        console.log('Sample partner object:', partnersData[0] || 'No data');
-        // Format fechaAlta to DD-MM-YYYY
-        const formattedData = partnersData.map(partner => ({
-          ...partner,
-          fechaAlta: partner.fechaAlta ? (() => {
-            const date = new Date(partner.fechaAlta);
-            return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
-          })() : partner.fechaAlta
-        }));
-        setData(formattedData);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
     fetchPartners();
   }, []);
 
@@ -59,6 +62,30 @@ const PartnersPage = () => {
       </DashboardLayout>
     );
   }
+
+  const handleEdit = (ids) => {
+    if (ids.length === 1) {
+      router.push(`/partners/edit/${ids[0]}`);
+    }
+  };
+
+  const handleDelete = async (ids) => {
+    try {
+      for (const id of ids) {
+        const response = await fetch(`/api/partner/${id}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) {
+          throw new Error(`Error al eliminar partner ${id}`);
+        }
+      }
+      // Refresh data
+      fetchPartners();
+    } catch (error) {
+      console.error('Error deleting partners:', error);
+      alert('Error al eliminar los partners seleccionados');
+    }
+  };
 
   console.log('Rendering table with headers:', partnersHeaders);
   console.log('Rendering table with data:', data);
@@ -78,6 +105,8 @@ const PartnersPage = () => {
           data={data}
           actionButton={null} // No button in table header
           editPath="/partners/edit"
+          onEdit={handleEdit}
+          onDelete={handleDelete}
         />
       </div>
     </DashboardLayout>

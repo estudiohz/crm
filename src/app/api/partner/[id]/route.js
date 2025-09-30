@@ -29,16 +29,26 @@ export async function GET(request, { params }) {
 export async function DELETE(request, { params }) {
   try {
     const { id } = await params;
+    const partnerId = parseInt(id);
+
+    // Verificar si el partner existe
+    const partner = await prisma.partner.findUnique({
+      where: { id: partnerId },
+    });
+
+    if (!partner) {
+      return NextResponse.json({ message: 'Partner no encontrado' }, { status: 404 });
+    }
 
     // Primero, desasociar cuentas
     await prisma.cuenta.updateMany({
-      where: { partnerRecordId: parseInt(id) },
+      where: { partnerRecordId: partnerId },
       data: { partnerRecordId: null },
     });
 
     // Eliminar el partner
     const deletedPartner = await prisma.partner.delete({
-      where: { id: parseInt(id) },
+      where: { id: partnerId },
     });
 
     return NextResponse.json({ message: 'Partner eliminado', partner: deletedPartner }, { status: 200 });

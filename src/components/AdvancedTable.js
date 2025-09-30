@@ -1,19 +1,26 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Icon } from '@iconify/react'; // Mantenemos la importación de Icon para las flechas de ordenación
 import Link from 'next/link';
 
-// NOTA IMPORTANTE: La importación de AddButton ha sido eliminada de aquí. 
+// NOTA IMPORTANTE: La importación de AddButton ha sido eliminada de aquí.
 // Ahora AdvancedTable recibe el botón de acción principal como una prop.
 
-const AdvancedTable = ({ headers, data, title, actionButton, editPath, pageTitle }) => {
+const AdvancedTable = ({ headers, data, title, actionButton, editPath, pageTitle, onEdit, onDelete }) => {
   const [sortConfig, setSortConfig] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteInput, setDeleteInput] = useState('');
+
   // Se elimina el estado 'showAddForm' y 'handleFormSubmit' ya que ahora usamos navegación de página.
+
+  useEffect(() => {
+    setSelectedRows([]);
+  }, [currentPage]);
 
   const filteredData = useMemo(() => {
     if (!searchTerm) {
@@ -63,6 +70,48 @@ const AdvancedTable = ({ headers, data, title, actionButton, editPath, pageTitle
     setSortConfig({ key, direction });
   };
 
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedRows(currentItems.map(row => row.id));
+    } else {
+      setSelectedRows([]);
+    }
+  };
+
+  const handleSelectRow = (id, checked) => {
+    if (checked) {
+      setSelectedRows(prev => [...prev, id]);
+    } else {
+      setSelectedRows(prev => prev.filter(rowId => rowId !== id));
+    }
+  };
+
+  const handleEdit = () => {
+    if (onEdit && selectedRows.length === 1) {
+      onEdit(selectedRows);
+    }
+  };
+
+  const handleDelete = () => {
+    if (onDelete && selectedRows.length > 0) {
+      setShowDeleteModal(true);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (parseInt(deleteInput) === selectedRows.length) {
+      await onDelete(selectedRows);
+      setSelectedRows([]);
+      setShowDeleteModal(false);
+      setDeleteInput('');
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setDeleteInput('');
+  };
+
   const getArrowIcon = (key) => {
     if (!sortConfig || sortConfig.key !== key) {
       return null;
@@ -102,8 +151,28 @@ const AdvancedTable = ({ headers, data, title, actionButton, editPath, pageTitle
 
             {/* Columna del botón (6/12) - Alineado a la derecha */}
             <div className="col-span-6 flex justify-end items-center">
-              {/* RENDERIZAMOS EL BOTÓN PASADO COMO PROP */}
-              {actionButton}
+              {selectedRows.length > 0 ? (
+                <>
+                  <button
+                    onClick={handleEdit}
+                    disabled={selectedRows.length !== 1}
+                    className="px-3 py-2 text-xs text-gray-700 border border-gray-600 rounded-lg hover:bg-gray-50 transition-colors mr-2.5 flex items-center"
+                  >
+                    <Icon icon="heroicons:pencil" className="w-4 h-4 mr-1" />
+                    Editar
+                  </button>
+                  <button
+                    onClick={handleDelete}
+                    className="px-3 py-2 text-xs text-red-700 border border-red-600 rounded-lg hover:bg-red-50 transition-colors flex items-center"
+                  >
+                    <Icon icon="heroicons:trash" className="w-4 h-4 mr-1" />
+                    Eliminar
+                  </button>
+                </>
+              ) : (
+                /* RENDERIZAMOS EL BOTÓN PASADO COMO PROP */
+                actionButton
+              )}
             </div>
           </div>
         ) : (
@@ -119,10 +188,30 @@ const AdvancedTable = ({ headers, data, title, actionButton, editPath, pageTitle
               />
               <Icon icon="heroicons:magnifying-glass" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
             </div>
-            {/* Botón de exportar alineado a la derecha */}
-            <button className="px-3 py-2 text-xs text-gray-700 border border-gray-600 rounded-lg hover:bg-gray-50 transition-colors">
-              Exportar
-            </button>
+            {selectedRows.length > 0 ? (
+              <>
+                <button
+                  onClick={handleEdit}
+                  disabled={selectedRows.length !== 1}
+                  className="px-3 py-2 text-xs text-gray-700 border border-gray-600 rounded-lg hover:bg-gray-50 transition-colors mr-2.5 flex items-center"
+                >
+                  <Icon icon="heroicons:pencil" className="w-4 h-4 mr-1" />
+                  Editar
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="px-3 py-2 text-xs text-red-700 border border-red-600 rounded-lg hover:bg-red-50 transition-colors flex items-center"
+                >
+                  <Icon icon="heroicons:trash" className="w-4 h-4 mr-1" />
+                  Eliminar
+                </button>
+              </>
+            ) : (
+              /* Botón de exportar alineado a la derecha */
+              <button className="px-3 py-2 text-xs text-gray-700 border border-gray-600 rounded-lg hover:bg-gray-50 transition-colors">
+                Exportar
+              </button>
+            )}
           </div>
         )}
       </header>
@@ -135,7 +224,11 @@ const AdvancedTable = ({ headers, data, title, actionButton, editPath, pageTitle
                 <thead className="border-t border-slate-100 dark:border-slate-800 text-slate-700 dark:bg-slate-300">
                   <tr>
                     <th className="px-3 py-2 text-left w-8">
-                      <input type="checkbox" />
+                      <input
+                        type="checkbox"
+                        checked={selectedRows.length === currentItems.length && currentItems.length > 0}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                      />
                     </th>
                     {headers.map((header, index) => (
                       <th
@@ -159,7 +252,11 @@ const AdvancedTable = ({ headers, data, title, actionButton, editPath, pageTitle
                   {currentItems.map((row) => (
                     <tr key={row.id} className="border border-gray-200">
                       <td className="px-3 py-2 text-left">
-                        <input type="checkbox" />
+                        <input
+                          type="checkbox"
+                          checked={selectedRows.includes(row.id)}
+                          onChange={(e) => handleSelectRow(row.id, e.target.checked)}
+                        />
                       </td>
                       {headers.map((header) => {
                         let cellContent;
@@ -286,7 +383,39 @@ const AdvancedTable = ({ headers, data, title, actionButton, editPath, pageTitle
           </ul>
         </div>
       </div>
-      
+
+      {/* Modal de eliminación */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-[rgba(20,20,20,0.46)] backdrop-blur flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4 text-[#555]">¿Eliminar {selectedRows.length} registros?</h3>
+            <p className="mb-4 text-[#555]">Escribe a continuación el número de registros que quieres eliminar (debe coincidir con los registros seleccionados):</p>
+            <input
+              type="number"
+              value={deleteInput}
+              onChange={(e) => setDeleteInput(e.target.value)}
+              className={`w-full px-3 py-2 border border-gray-300 rounded-md mb-4 placeholder-[#efefef] ${deleteInput ? 'text-red-600 font-bold' : ''}`}
+              placeholder="Número de registros"
+            />
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={handleCancelDelete}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={parseInt(deleteInput) !== selectedRows.length}
+                className="px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* El modal/formulario lateral ha sido eliminado de aquí */}
     </div>
   );

@@ -5,6 +5,7 @@ import AdvancedTable from '../../components/AdvancedTable';
 import AddButton from '../../components/AddButton';
 import RefreshButton from '../../components/RefreshButton';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 // Encabezados de la tabla para las Facturas
 const facturasHeaders = [
@@ -21,6 +22,7 @@ const FacturasPage = () => {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const router = useRouter();
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -58,6 +60,29 @@ const FacturasPage = () => {
     fetchFacturas();
   }, [user, refreshTrigger]);
 
+  const handleEdit = (ids) => {
+    if (ids.length === 1) {
+      router.push(`/facturas/edit/${ids[0]}`);
+    }
+  };
+
+  const handleDelete = async (ids) => {
+    try {
+      for (const id of ids) {
+        const response = await fetch(`/api/facturas/${id}`, {
+          method: 'DELETE',
+        });
+        if (!response.ok) {
+          throw new Error(`Error al eliminar factura ${id}`);
+        }
+      }
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      console.error('Error deleting facturas:', error);
+      alert('Error al eliminar las facturas seleccionadas');
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -82,6 +107,8 @@ const FacturasPage = () => {
           data={data}
           actionButton={null}
           editPath="/facturas/edit"
+          onEdit={handleEdit}
+          onDelete={handleDelete}
         />
       </div>
     </DashboardLayout>
