@@ -34,6 +34,9 @@ model User {
 
   // Relación con Contacto
   contactos Contacto[]
+
+  // Relación con Formulario
+  formularios Formulario[]
 }
 
 model Cuenta {
@@ -166,4 +169,19 @@ model FacturaItem {
   // Relación con Factura
   facturaId   Int
   factura     Factura @relation(fields: [facturaId], references: [id], onDelete: Cascade)
+}
+
+model Formulario {
+  id        Int      @id @default(autoincrement())
+  nombre    String
+  url       String
+  email     String
+  estado    String
+  mappings  Json?    // Custom field mappings
+  webhookUrl String? @unique
+  webhookSecret String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

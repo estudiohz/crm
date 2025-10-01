@@ -67,6 +67,12 @@ const Sidebar = () => {
             </Link>
           </li>
           <li className="mb-2">
+            <Link href="/formularios" className="flex items-center p-2 rounded hover:bg-gray-700">
+              <Icon icon="heroicons:clipboard-document-list" className="w-5 h-5 mr-2" />
+              Formularios
+            </Link>
+          </li>
+          <li className="mb-2">
             <div
               className={`flex items-center p-2 rounded hover:bg-gray-700 cursor-pointer ${isModulosActive ? 'bg-gray-600' : ''}`}
               onClick={() => setModulosOpen(!modulosOpen)}
@@ -119,6 +125,12 @@ const Sidebar = () => {
             <Link href="/empresas" className="flex items-center p-2 rounded hover:bg-gray-700">
               <Icon icon="heroicons:building-office-2" className="w-5 h-5 mr-2" />
               Empresas
+            </Link>
+          </li>
+          <li className="mb-2">
+            <Link href="/formularios" className="flex items-center p-2 rounded hover:bg-gray-700">
+              <Icon icon="heroicons:clipboard-document-list" className="w-5 h-5 mr-2" />
+              Formularios
             </Link>
           </li>
           <li className="mb-2">
@@ -183,6 +195,12 @@ const Sidebar = () => {
             <Link href="/empresas" className="flex items-center p-2 rounded hover:bg-gray-700">
               <Icon icon="heroicons:building-office-2" className="w-5 h-5 mr-2" />
               Empresas
+            </Link>
+          </li>
+          <li className="mb-2">
+            <Link href="/formularios" className="flex items-center p-2 rounded hover:bg-gray-700">
+              <Icon icon="heroicons:clipboard-document-list" className="w-5 h-5 mr-2" />
+              Formularios
             </Link>
           </li>
           <li className="mb-2">

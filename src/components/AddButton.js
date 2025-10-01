@@ -21,6 +21,7 @@ export default function AddButton() {
   const isContactosMode = lowerPathname.includes('/contactos');
   const isEmpresasMode = lowerPathname.includes('/empresas');
   const isFacturasMode = lowerPathname.includes('/facturas');
+  const isFormulariosMode = lowerPathname.includes('/formularios');
 
   // 1. Definir el texto del botón
   let buttonText = 'Añadir Cuenta';
@@ -34,6 +35,8 @@ export default function AddButton() {
     buttonText = 'Añadir Empresa';
   } else if (isFacturasMode) {
     buttonText = 'Añadir Factura';
+  } else if (isFormulariosMode) {
+    buttonText = 'Añadir Formulario';
   }
 
   // 2. Definir el enlace de destino.
@@ -48,6 +51,8 @@ export default function AddButton() {
     targetLink = '/empresas/add';
   } else if (isFacturasMode) {
     targetLink = '/facturas/add';
+  } else if (isFormulariosMode) {
+    targetLink = '/formularios/add';
   }
 
   return (

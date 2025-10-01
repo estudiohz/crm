@@ -1,0 +1,306 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Icon } from '@iconify/react';
+import DashboardLayout from '../../../components/DashboardLayout';
+import { useRouter } from 'next/navigation';
+
+// Contact fields for mapping
+const contactFields = [
+  'nombre', 'apellidos', 'email', 'telefono', 'empresa', 'estado',
+  'fechaCreacion', 'origen', 'direccion', 'localidad', 'comunidad', 'pais', 'cp'
+];
+
+// Initial form data
+const initialFormData = {
+  nombre: '',
+  url: '',
+  email: '',
+  estado: 'activado',
+  mappings: []
+};
+
+const AddFormularioPage = () => {
+  const [formData, setFormData] = useState(initialFormData);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState('');
+  const [user, setUser] = useState(null);
+  const [webhookInfo, setWebhookInfo] = useState(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+  }, []);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
+  const addMapping = () => {
+    setFormData((prevData) => ({
+      ...prevData,
+      mappings: [...prevData.mappings, { contactField: '', formField: '' }]
+    }));
+  };
+
+  const updateMapping = (index, field, value) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      mappings: prevData.mappings.map((mapping, i) =>
+        i === index ? { ...mapping, [field]: value } : mapping
+      )
+    }));
+  };
+
+  const removeMapping = (index) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      mappings: prevData.mappings.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setMessage('');
+
+    if (!user) {
+      setMessage('Usuario no encontrado.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/formularios', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          userId: user.id
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al añadir el formulario');
+      }
+
+      const newFormulario = await response.json();
+      console.log('Formulario añadido con éxito:', newFormulario);
+
+      setWebhookInfo({ url: newFormulario.webhookUrl, secret: newFormulario.webhookSecret });
+      setMessage('¡Formulario añadido con éxito!');
+
+    } catch (error) {
+      console.error('Error en el envío del formulario:', error);
+      setMessage('Error al añadir el formulario. Inténtalo de nuevo.');
+      setIsSubmitting(false);
+    }
+  };
+
+
+  const BackButton = () => (
+    <a
+      href="/formularios"
+      className="inline-flex items-center space-x-2 text-sm font-medium text-blue-600 hover:text-blue-800 transition duration-150"
+    >
+      <Icon icon="heroicons:arrow-left" className="w-4 h-4" />
+      <span>Volver a Formularios</span>
+    </a>
+  );
+
+  return (
+    <DashboardLayout>
+      <div className="min-h-full">
+        <div className="mb-6 flex justify-between items-center w-[90%] mx-auto">
+          <h1 className="text-xl font-bold text-slate-900">Añadir Nuevo Formulario</h1>
+          <BackButton />
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow-md w-[96%] mx-auto">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Nombre del Formulario and Estado */}
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="nombre" className="block text-sm font-medium text-slate-700 mb-1">Nombre de formulario</label>
+                <input
+                  type="text"
+                  id="nombre"
+                  name="nombre"
+                  value={formData.nombre}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700"
+                  placeholder="Nombre del formulario"
+                />
+              </div>
+              <div>
+                <label htmlFor="estado" className="block text-sm font-medium text-slate-700 mb-1">Estado</label>
+                <select
+                  id="estado"
+                  name="estado"
+                  value={formData.estado}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700"
+                >
+                  <option value="activado">Activado</option>
+                  <option value="desactivado">Desactivado</option>
+                </select>
+              </div>
+            </div>
+
+            {/* URL del Formulario and Email */}
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="url" className="block text-sm font-medium text-slate-700 mb-1">URL del Formulario</label>
+                <input
+                  type="url"
+                  id="url"
+                  name="url"
+                  value={formData.url}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700"
+                  placeholder="https://..."
+                />
+              </div>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700"
+                  placeholder="email@ejemplo.com"
+                />
+              </div>
+            </div>
+
+            {/* Mapeo de Campos Personalizados */}
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900 mb-2">Mapeo de Campos Personalizados</h2>
+              <p className="text-sm text-slate-600 mb-4">Añade aquí cualquier campo adicional que tu formulario capture.</p>
+
+              {formData.mappings.map((mapping, index) => (
+                <div key={index} className="grid grid-cols-2 gap-4 mb-4 items-end">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Campo de Contacto</label>
+                    <select
+                      value={mapping.contactField}
+                      onChange={(e) => updateMapping(index, 'contactField', e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-700"
+                    >
+                      <option value="">Seleccionar campo</option>
+                      {contactFields.map(field => (
+                        <option key={field} value={field}>{field}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-end space-x-2">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-slate-700 mb-1">Campo del Formulario</label>
+                      <input
+                        type="text"
+                        value={mapping.formField}
+                        onChange={(e) => updateMapping(index, 'formField', e.target.value)}
+                        placeholder="ID del campo en el formulario"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-700"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeMapping(index)}
+                      className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                    >
+                      <Icon icon="heroicons:trash" className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              <button
+                type="button"
+                onClick={addMapping}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center space-x-2"
+              >
+                <Icon icon="heroicons:plus" className="w-5 h-5" />
+                <span>Añadir campo extra</span>
+              </button>
+            </div>
+
+            {message && (
+              <div className={`mt-4 p-3 rounded-lg text-sm font-semibold ${message.includes('éxito') ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                {message}
+              </div>
+            )}
+
+            {webhookInfo && (
+              <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <h3 className="text-lg font-semibold text-green-800 mb-2">Webhook Configurado</h3>
+                <div className="space-y-2">
+                  <div>
+                    <label className="block text-sm font-medium text-green-700">URL del Webhook</label>
+                    <input
+                      type="text"
+                      value={webhookInfo.url}
+                      readOnly
+                      className="w-full px-3 py-2 border border-green-300 rounded bg-green-50 text-green-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-green-700">Clave Secreta</label>
+                    <input
+                      type="text"
+                      value={webhookInfo.secret}
+                      readOnly
+                      className="w-full px-3 py-2 border border-green-300 rounded bg-green-50 text-green-800"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                onClick={() => setFormData(initialFormData)}
+                className="btn px-4 py-2 border border-slate-300 text-slate-700 rounded-md hover:bg-slate-100 transition-colors duration-200 font-semibold text-sm"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="btn bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md font-semibold text-sm transition-colors duration-200 shadow-md flex items-center space-x-1 disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Icon icon="heroicons:arrow-path" className="w-5 h-5 animate-spin" />
+                    <span>Guardando...</span>
+                  </>
+                ) : (
+                  <>
+                    <Icon icon="heroicons:check-circle" className="w-5 h-5" />
+                    <span>Guardar Formulario</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default AddFormularioPage;
