@@ -8,7 +8,20 @@ const prisma = new PrismaClient();
 export async function POST(request, { params }) {
   try {
     const { id } = await params;
-    const body = await request.json();
+    let body;
+
+    const contentType = request.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      body = await request.json();
+    } else if (contentType && (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data'))) {
+      const formData = await request.formData();
+      body = {};
+      for (const [key, value] of formData.entries()) {
+        body[key] = value;
+      }
+    } else {
+      body = await request.json(); // fallback
+    }
 
     console.log('Webhook received for formulario:', id, 'body:', body);
 

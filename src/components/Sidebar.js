@@ -13,7 +13,7 @@ const Sidebar = () => {
   const pathname = usePathname();
 
   const isPartnerActive = pathname.startsWith('/cuentas') || pathname.startsWith('/partners');
-  const isModulosActive = pathname.startsWith('/facturas') || pathname.startsWith('/conexion');
+  const isModulosActive = pathname.startsWith('/facturas') || pathname.startsWith('/conexion') || pathname.startsWith('/salud-sitio');
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -102,6 +102,12 @@ const Sidebar = () => {
                   <Link href="/conexion" className="flex items-center p-2 rounded hover:bg-gray-700">
                     <Icon icon="heroicons:cloud-arrow-up" className="w-4 h-4 mr-2" />
                     Conexión
+                  </Link>
+                </li>
+                <li className="mb-2">
+                  <Link href="/salud-sitio" className="flex items-center p-2 rounded hover:bg-gray-700">
+                    <Icon icon="heroicons:heart" className="w-4 h-4 mr-2" />
+                    Salud del sitio
                   </Link>
                 </li>
               </ul>
