@@ -6,6 +6,7 @@ import AddButton from '../../components/AddButton'; // Componente dinámico para
 import RefreshButton from '../../components/RefreshButton';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { exportToCSV } from '../../utils/csvExport';
 
 // Encabezados de la tabla para los Formularios
 const formulariosHeaders = [
@@ -84,6 +85,21 @@ const FormulariosPage = () => {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const response = await fetch(`/api/formularios?userId=${user.id}`);
+      if (!response.ok) {
+        throw new Error('Error al obtener datos para exportar');
+      }
+      const exportData = await response.json();
+
+      exportToCSV(exportData, formulariosHeaders, 'formularios.csv');
+    } catch (error) {
+      console.error('Error exporting formularios:', error);
+      alert('Error al exportar los formularios');
+    }
+  };
+
   console.log('Rendering table with headers:', formulariosHeaders);
   console.log('Rendering table with data:', data);
 
@@ -106,6 +122,7 @@ const FormulariosPage = () => {
           editPath="/formularios/edit"
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onExport={handleExport}
         />
       </div>
     </DashboardLayout>

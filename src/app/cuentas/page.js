@@ -6,6 +6,7 @@ import AddButton from '../../components/AddButton'; // 1. Importar el componente
 import RefreshButton from '../../components/RefreshButton'; // Importar el botón de refrescar
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { exportToCSV } from '../../utils/csvExport';
 
 // Encabezados de la tabla para los Cuentas
 const cuentasHeaders = [
@@ -92,6 +93,36 @@ const CuentasPage = () => {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const response = await fetch('/api/cuentas');
+      if (!response.ok) {
+        throw new Error('Error al obtener datos para exportar');
+      }
+      let exportData = await response.json();
+
+      // Apply same filtering as display
+      if (user.role === 'partner') {
+        exportData = exportData.filter(cuenta => cuenta.partnerRecordId === user.partner?.id);
+      }
+
+      const formattedExportData = exportData.map(cuenta => ({
+        ...cuenta,
+        email: cuenta.email.toLowerCase(),
+        fechaAlta: cuenta.fechaAlta ? (() => {
+          const date = new Date(cuenta.fechaAlta);
+          return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
+        })() : cuenta.fechaAlta,
+        modulo: cuenta.modulo || []
+      }));
+
+      exportToCSV(formattedExportData, cuentasHeaders, 'cuentas.csv');
+    } catch (error) {
+      console.error('Error exporting cuentas:', error);
+      alert('Error al exportar las cuentas');
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -119,6 +150,7 @@ const CuentasPage = () => {
           editPath="/cuentas/edit" // Partners pueden editar sus cuentas
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onExport={handleExport}
         />
       </div>
     </DashboardLayout>

@@ -5,6 +5,7 @@ import AdvancedTable from '../../components/AdvancedTable';
 import AddButton from '../../components/AddButton';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { exportToCSV } from '../../utils/csvExport';
 
 // Encabezados de la tabla para las Etiquetas
 const etiquetasHeaders = [
@@ -89,6 +90,21 @@ const EtiquetasPage = () => {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const response = await fetch(`/api/etiquetas?userId=${user.id}`);
+      if (!response.ok) {
+        throw new Error('Error al obtener datos para exportar');
+      }
+      const exportData = await response.json();
+
+      exportToCSV(exportData, etiquetasHeaders, 'etiquetas.csv');
+    } catch (error) {
+      console.error('Error exporting etiquetas:', error);
+      alert('Error al exportar las etiquetas');
+    }
+  };
+
   console.log('Rendering table with headers:', etiquetasHeaders);
   console.log('Rendering table with data:', data);
 
@@ -109,6 +125,7 @@ const EtiquetasPage = () => {
           editPath="/etiquetas/edit"
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onExport={handleExport}
         />
       </div>
     </DashboardLayout>

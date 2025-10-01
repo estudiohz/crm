@@ -5,6 +5,7 @@ import AdvancedTable from '../../components/AdvancedTable';
 import AddButton from '../../components/AddButton'; // Componente dinámico para Añadir Partner
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { exportToCSV } from '../../utils/csvExport';
 
 // Encabezados de la tabla para los Partners
 const partnersHeaders = [
@@ -87,6 +88,29 @@ const PartnersPage = () => {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const response = await fetch('/api/partner');
+      if (!response.ok) {
+        throw new Error('Error al obtener datos para exportar');
+      }
+      const exportData = await response.json();
+
+      const formattedExportData = exportData.map(partner => ({
+        ...partner,
+        fechaAlta: partner.fechaAlta ? (() => {
+          const date = new Date(partner.fechaAlta);
+          return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
+        })() : partner.fechaAlta,
+      }));
+
+      exportToCSV(formattedExportData, partnersHeaders, 'partners.csv');
+    } catch (error) {
+      console.error('Error exporting partners:', error);
+      alert('Error al exportar los partners');
+    }
+  };
+
   console.log('Rendering table with headers:', partnersHeaders);
   console.log('Rendering table with data:', data);
 
@@ -107,6 +131,7 @@ const PartnersPage = () => {
           editPath="/partners/edit"
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onExport={handleExport}
         />
       </div>
     </DashboardLayout>

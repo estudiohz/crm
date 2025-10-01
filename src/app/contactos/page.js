@@ -6,6 +6,7 @@ import AddButton from '../../components/AddButton'; // 1. Importar el componente
 import RefreshButton from '../../components/RefreshButton'; // Importar el botón de refrescar
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { exportToCSV } from '../../utils/csvExport';
 
 // Encabezados de la tabla para los Contactos
 const contactosHeaders = [
@@ -86,6 +87,32 @@ const ContactosPage = () => {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      // Fetch all contactos data (assuming the API returns all when no pagination params)
+      const response = await fetch(`/api/contactos?userId=${user.id}`);
+      if (!response.ok) {
+        throw new Error('Error al obtener datos para exportar');
+      }
+      const exportData = await response.json();
+
+      // Format the data same as display
+      const formattedExportData = exportData.map(contacto => ({
+        ...contacto,
+        email: contacto.email.toLowerCase(),
+        fechaCreacion: contacto.fechaCreacion ? (() => {
+          const date = new Date(contacto.fechaCreacion);
+          return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
+        })() : contacto.fechaCreacion,
+      }));
+
+      exportToCSV(formattedExportData, contactosHeaders, 'contactos.csv');
+    } catch (error) {
+      console.error('Error exporting contactos:', error);
+      alert('Error al exportar los contactos');
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -113,6 +140,7 @@ const ContactosPage = () => {
           editPath="/contactos/edit"
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onExport={handleExport}
         />
       </div>
     </DashboardLayout>

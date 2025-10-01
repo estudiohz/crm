@@ -7,7 +7,7 @@ import Link from 'next/link';
 // NOTA IMPORTANTE: La importación de AddButton ha sido eliminada de aquí.
 // Ahora AdvancedTable recibe el botón de acción principal como una prop.
 
-const AdvancedTable = ({ headers, data, title, actionButton, editPath, pageTitle, onEdit, onDelete }) => {
+const AdvancedTable = ({ headers, data, title, actionButton, editPath, pageTitle, onEdit, onDelete, onExport }) => {
   const [sortConfig, setSortConfig] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -208,7 +208,10 @@ const AdvancedTable = ({ headers, data, title, actionButton, editPath, pageTitle
               </>
             ) : (
               /* Botón de exportar alineado a la derecha */
-              <button className="px-3 py-2 text-xs text-gray-700 border border-gray-600 rounded-lg hover:bg-gray-50 transition-colors">
+              <button
+                onClick={onExport}
+                className="px-3 py-2 text-xs text-gray-700 border border-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
+              >
                 Exportar
               </button>
             )}

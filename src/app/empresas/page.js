@@ -6,6 +6,7 @@ import AddButton from '../../components/AddButton';
 import RefreshButton from '../../components/RefreshButton';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { exportToCSV } from '../../utils/csvExport';
 
 // Encabezados de la tabla para las Empresas
 const empresasHeaders = [
@@ -83,6 +84,29 @@ const EmpresasPage = () => {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const response = await fetch(`/api/empresas?userId=${user.id}`);
+      if (!response.ok) {
+        throw new Error('Error al obtener datos para exportar');
+      }
+      const exportData = await response.json();
+
+      const formattedExportData = exportData.map(empresa => ({
+        ...empresa,
+        fechaCreacion: empresa.fechaCreacion ? (() => {
+          const date = new Date(empresa.fechaCreacion);
+          return `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
+        })() : empresa.fechaCreacion,
+      }));
+
+      exportToCSV(formattedExportData, empresasHeaders, 'empresas.csv');
+    } catch (error) {
+      console.error('Error exporting empresas:', error);
+      alert('Error al exportar las empresas');
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -109,6 +133,7 @@ const EmpresasPage = () => {
           editPath="/empresas/edit"
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onExport={handleExport}
         />
       </div>
     </DashboardLayout>

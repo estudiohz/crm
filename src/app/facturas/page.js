@@ -7,6 +7,7 @@ import RefreshButton from '../../components/RefreshButton';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { exportToCSV } from '../../utils/csvExport';
 
 // Encabezados de la tabla para las Facturas
 const facturasHeaders = [
@@ -145,6 +146,29 @@ const FacturasPage = () => {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const response = await fetch(`/api/facturas?userId=${user.id}`);
+      if (!response.ok) {
+        throw new Error('Error al obtener datos para exportar');
+      }
+      const exportData = await response.json();
+
+      // Format for CSV export (raw data)
+      const formattedExportData = exportData.map(factura => ({
+        ...factura,
+        numeroFactura: `${factura.serie}/${factura.numero}`,
+        cliente: `${factura.contacto?.nombre || ''} ${factura.contacto?.apellidos || ''}`.trim(),
+        nif: factura.contacto?.nif || '',
+      }));
+
+      exportToCSV(formattedExportData, facturasHeaders, 'facturas.csv');
+    } catch (error) {
+      console.error('Error exporting facturas:', error);
+      alert('Error al exportar las facturas');
+    }
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -244,6 +268,7 @@ const FacturasPage = () => {
           editPath="/facturas/edit"
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onExport={handleExport}
         />
       </div>
     </DashboardLayout>
