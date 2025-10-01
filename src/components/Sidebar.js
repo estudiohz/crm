@@ -13,7 +13,7 @@ const Sidebar = () => {
   const pathname = usePathname();
 
   const isPartnerActive = pathname.startsWith('/cuentas') || pathname.startsWith('/partners');
-  const isModulosActive = pathname.startsWith('/facturas');
+  const isModulosActive = pathname.startsWith('/facturas') || pathname.startsWith('/conexion');
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -86,6 +86,12 @@ const Sidebar = () => {
                     Facturas
                   </Link>
                 </li>
+                <li className="mb-2">
+                  <Link href="/conexion" className="flex items-center p-2 rounded hover:bg-gray-700">
+                    <Icon icon="heroicons:cloud-arrow-up" className="w-4 h-4 mr-2" />
+                    Conexión
+                  </Link>
+                </li>
               </ul>
             )}
           </li>
@@ -119,6 +125,12 @@ const Sidebar = () => {
             <Link href="/facturas" className="flex items-center p-2 rounded hover:bg-gray-700">
               <Icon icon="heroicons:document-text" className="w-5 h-5 mr-2" />
               Facturas
+            </Link>
+          </li>
+          <li className="mb-2">
+            <Link href="/conexion" className="flex items-center p-2 rounded hover:bg-gray-700">
+              <Icon icon="heroicons:cloud-arrow-up" className="w-5 h-5 mr-2" />
+              Conexión
             </Link>
           </li>
         </ul>
@@ -191,6 +203,12 @@ const Sidebar = () => {
                   <Link href="/facturacion" className="flex items-center p-2 rounded hover:bg-gray-700">
                     <Icon icon="heroicons:document-text" className="w-4 h-4 mr-2" />
                     Facturación
+                  </Link>
+                </li>
+                <li className="mb-2">
+                  <Link href="/conexion" className="flex items-center p-2 rounded hover:bg-gray-700">
+                    <Icon icon="heroicons:cloud-arrow-up" className="w-4 h-4 mr-2" />
+                    Conexión
                   </Link>
                 </li>
               </ul>

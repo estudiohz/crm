@@ -245,11 +245,10 @@ const AddFacturaPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-full">
-        <div className="mb-6">
+      <div>
+        <div className="flex justify-between items-center mb-4 w-[96%] mx-auto">
+          <h1 className="text-xl font-bold text-gray-900">Añadir Nueva Factura</h1>
           <BackButton />
-          <h1 className="text-3xl font-bold text-slate-900 mt-2">Añadir Nueva Factura</h1>
-          <p className="text-slate-600">Completa la información para registrar una nueva factura.</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md w-[96%] mx-auto">
           <form onSubmit={handleSubmit} className="space-y-6">

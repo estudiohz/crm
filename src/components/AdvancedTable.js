@@ -234,7 +234,7 @@ const AdvancedTable = ({ headers, data, title, actionButton, editPath, pageTitle
                       <th
                         key={header.key}
                         scope="col"
-                        className={`px-3 py-2 text-left cursor-pointer border-r border-slate-300 border-b border-white ${header.key === 'imagen' ? 'w-8' : ''} ${index === headers.length - 1 ? 'border-r-0' : ''}`}
+                        className={`px-3 py-2 cursor-pointer border-r border-slate-300 border-b border-white ${header.key === 'imagen' ? 'w-8' : ''} ${header.key === 'total' ? 'text-right' : 'text-left'} ${index === headers.length - 1 ? 'border-r-0' : ''}`}
                         onClick={() => requestSort(header.key)}
                       >
                         {header.key === 'imagen' ? '' : header.label}
@@ -313,13 +313,13 @@ const AdvancedTable = ({ headers, data, title, actionButton, editPath, pageTitle
                         // Make name columns clickable
                         if (header.key === 'partner' || header.key === 'cuenta' || header.key === 'empresa' || header.key === 'nombre' || header.key === 'numeroFactura') {
                           cellContent = (
-                            <Link href={`${editPath}/${row.id}`}>
+                            <Link href={`${editPath}/${row.id}`} className={header.key === 'numeroFactura' ? 'underline' : ''} style={header.key === 'numeroFactura' ? { textDecorationColor: '#555' } : {}}>
                               {cellContent}
                             </Link>
                           );
                         }
                         return (
-                          <td key={header.key} className="px-3 py-2">
+                          <td key={header.key} className={`px-3 py-2 ${header.key === 'total' ? 'text-right pr-5' : ''}`}>
                             {cellContent}
                           </td>
                         );

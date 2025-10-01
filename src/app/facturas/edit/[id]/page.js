@@ -267,13 +267,12 @@ const EditFacturaPage = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-full">
-        <div className="mb-6">
+      <div>
+        <div className="flex justify-between items-center mb-4 w-[96%] mx-auto">
+          <h1 className="text-xl font-bold text-gray-900">Editar Factura</h1>
           <BackButton />
-          <h1 className="text-3xl font-bold text-slate-900 mt-2">Editar Factura</h1>
-          <p className="text-slate-600">Modifica la información de la factura.</p>
         </div>
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-100 max-w-6xl mx-auto">
+        <div className="bg-white p-6 rounded-lg shadow-md w-[96%] mx-auto">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="flex gap-6">
               <div className="relative w-1/2">
