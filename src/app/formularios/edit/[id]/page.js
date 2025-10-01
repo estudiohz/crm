@@ -398,7 +398,7 @@ const EditFormularioPage = () => {
                       className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-700"
                     >
                       <option value="">Seleccionar campo</option>
-                      {contactFields.map(field => (
+                      {contactFields.filter(field => !formData.mappings.some((m, i) => i !== index && m.contactField === field)).map(field => (
                         <option key={field} value={field}>{field}</option>
                       ))}
                     </select>

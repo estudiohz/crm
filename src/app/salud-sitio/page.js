@@ -128,14 +128,6 @@ const SaludSitioPage = () => {
         </div>
 
         <div className="space-y-6">
-          {/* API Key Section */}
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4">API Key</h2>
-            <div className="p-4 bg-slate-900 rounded-lg">
-              <code className="text-white text-lg font-mono">{user?.webhookSecret}</code>
-            </div>
-          </div>
-
           {/* Webhooks Section */}
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Webhooks</h2>

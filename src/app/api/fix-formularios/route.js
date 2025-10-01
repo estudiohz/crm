@@ -107,12 +107,16 @@ export async function POST(request, { params }) {
             console.log(`Secret key found and removed as: ${secretKey}`);
         }
         
+        // Asegurar que las claves secretas estén limpias de espacios
+        const dbSecret = formulario.webhookSecret ? formulario.webhookSecret.trim() : '';
+        const providedSecretTrimmed = providedSecret ? providedSecret.trim() : null;
+
         // 💡 DIAGNÓSTICO: Registrar para ayudar al usuario a verificar el secreto de la DB
-        const dbSecretFragment = formulario.webhookSecret.substring(0, 8) + '...';
-        const providedSecretFragment = providedSecret ? providedSecret.substring(0, 8) + '...' : 'NONE';
+        const dbSecretFragment = dbSecret.substring(0, 8) + '...';
+        const providedSecretFragment = providedSecretTrimmed ? providedSecretTrimmed.substring(0, 8) + '...' : 'NONE';
 
 
-        if (!providedSecret || providedSecret !== formulario.webhookSecret) {
+        if (!providedSecretTrimmed || providedSecretTrimmed !== dbSecret) {
             console.warn(`Intento de acceso denegado para ID: ${connectionId}. Clave inválida.`);
             console.warn(`[DIAGNÓSTICO] Secreto esperado (DB): ${dbSecretFragment}. Secreto recibido: ${providedSecretFragment}`);
             return NextResponse.json({ error: 'Clave secreta de webhook inválida' }, { status: 403 });
@@ -132,19 +136,20 @@ export async function POST(request, { params }) {
         if (mappings.length > 0) {
             // Mapeo basado en la configuración de la DB
             mappings.forEach(mapping => {
-                // 💡 Nota: Elementor puede capitalizar las claves (Name, Email). Normalizamos a minúsculas si es necesario.
-                const formField = mapping.formField; 
+                // 💡 MEJORA: Normalizamos ambos lados a minúsculas para una coincidencia flexible.
+                const formFieldLower = mapping.formField.toLowerCase(); 
                 const keys = Object.keys(body);
-                // Buscar coincidencia exacta (ej. 'Name') o la versión minúscula (ej. 'name')
+                
+                // Buscar la clave en el body que coincida con el campo de la DB (ignorando mayúsculas)
                 const matchingKey = keys.find(key => 
-                    key === formField || key.toLowerCase() === formField.toLowerCase()
+                    key.toLowerCase() === formFieldLower 
                 );
                 
                 if (matchingKey) {
                     const rawValue = body[matchingKey];
                     const value = rawValue !== null && rawValue !== undefined ? rawValue.toString().trim() : '';
                     contactData[mapping.contactField] = value.length > 0 ? value : null;
-                    console.log(`Mapped via DB: ${formField} (using key ${matchingKey}) -> ${mapping.contactField} = ${contactData[mapping.contactField]}`);
+                    console.log(`Mapped via DB (Case Insensitive): ${mapping.formField} (using key ${matchingKey}) -> ${mapping.contactField} = ${contactData[mapping.contactField]}`);
                 }
             });
         } else {
@@ -177,6 +182,7 @@ export async function POST(request, { params }) {
         }
         
         // Final check for 'nombre' and 'email' which are critical
+        // Esto captura los campos si no fueron mapeados antes y usa la versión que se recibió.
         if (!contactData.nombre && (body.Nombre || body.Name || body.name)) {
              const nameValue = body.Nombre || body.Name || body.name;
              contactData.nombre = nameValue.toString().trim().length > 0 ? nameValue.toString().trim() : null;
