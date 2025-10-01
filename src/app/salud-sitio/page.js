@@ -1,152 +1,298 @@
-import { PrismaClient } from '@prisma/client';
-import { NextResponse } from 'next/server';
+'use client';
 
-const prisma = new PrismaClient();
+import { useState, useEffect } from 'react';
+import { Icon } from '@iconify/react';
+import DashboardLayout from '../../components/DashboardLayout';
 
-// Helper para parsear JSON de forma segura
-function safeJsonParse(jsonString) {
-    if (!jsonString || jsonString === 'null' || jsonString === '') {
-        return [];
+const SaludSitioPage = () => {
+  const [user, setUser] = useState(null);
+  const [formularios, setFormularios] = useState([]);
+  const [webhookLogs, setWebhookLogs] = useState([]);
+  const [listening, setListening] = useState(false);
+  const [testForm, setTestForm] = useState({
+    nombre: '',
+    apellido: '',
+    email: '',
+    webhookUrl: '',
+    webhookSecret: '',
+    selectedFormulario: ''
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
     }
-    try {
-        // Aseguramos que el resultado sea un array para evitar errores posteriores.
-        const parsed = JSON.parse(jsonString);
-        return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-        console.warn('Error al parsear JSON:', e);
-        return [];
-    }
-}
+  }, []);
 
-export async function POST(request, { params }) {
-    let connectionId;
-    try {
-        // 1. Obtener y validar el ID
-        connectionId = parseInt(params.id);
-        if (isNaN(connectionId)) {
-            return NextResponse.json({ error: 'ID de formulario no válido' }, { status: 400 });
-        }
+  useEffect(() => {
+    if (!user) return;
 
-        let body;
-        const contentType = request.headers.get('content-type');
-        
-        // 2. Parsear el cuerpo de la solicitud (Mejor manejo de form-data)
-        if (contentType && (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data'))) {
-            const formData = await request.formData();
-            body = Object.fromEntries(formData.entries());
+    const fetchFormularios = async () => {
+      try {
+        const response = await fetch(`/api/formularios?userId=${user.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setFormularios(data);
         } else {
-            // Asume JSON si no es form-data, o usa fallback
-            try {
-                body = await request.json(); 
-            } catch (e) {
-                 // Si no puede parsear como JSON, el body es irreconocible.
-                 console.warn('Body de solicitud no es JSON válido.', e);
-                 return NextResponse.json({ error: 'Formato de datos no compatible' }, { status: 400 });
-            }
+          console.error('Error fetching formularios');
         }
+      } catch (error) {
+        console.error('Error fetching formularios:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-        console.log('Webhook received for formulario:', connectionId, 'body:', body);
+    fetchFormularios();
+  }, [user]);
 
-        // 3. Buscar el formulario (Usando método findUnique de Prisma)
-        const formulario = await prisma.formulario.findUnique({
-            where: { id: connectionId },
-            // Selecciona explícitamente los campos necesarios
-            select: {
-                id: true,
-                webhookSecret: true,
-                mappings: true,
-                etiquetas: true,
-                userId: true,
-                // Agrega aquí cualquier otro campo que necesites para el mapeo
-            }
-        });
+  const refreshLogs = () => {
+    // In a real app, fetch latest logs from server
+    setWebhookLogs(prev => [...prev, {
+      id: prev.length + 1,
+      timestamp: new Date().toISOString(),
+      formularioId: 1,
+      data: { refreshed: true, timestamp: new Date().toISOString() }
+    }]);
+  };
 
-        if (!formulario) {
-            return NextResponse.json({ error: 'Formulario no encontrado' }, { status: 404 });
-        }
+  const toggleListening = () => {
+    setListening(!listening);
+  };
 
-        // 4. Verificar la clave secreta
-        const providedSecret = body.webhook_secret;
-        if (!providedSecret || providedSecret !== formulario.webhookSecret) {
-            console.warn(`Intento de acceso denegado para ID: ${connectionId}. Clave inválida.`);
-            return NextResponse.json({ error: 'Clave secreta de webhook inválida' }, { status: 403 });
-        }
-        
-        // 5. Preparar y parsear mappings y etiquetas
-        delete body.webhook_secret; // Remover la clave secreta del cuerpo del contacto
-        
-        // Asumiendo que Prisma devuelve los campos JSONB como strings, los parseamos.
-        const mappings = safeJsonParse(formulario.mappings);
-        const formularioEtiquetas = safeJsonParse(formulario.etiquetas);
+  const handleTestChange = (e) => {
+    const { name, value } = e.target;
+    if (name === 'selectedFormulario') {
+      const selected = formularios.find(f => f.id.toString() === value);
+      if (selected) {
+        setTestForm(prev => ({
+          ...prev,
+          selectedFormulario: value,
+          webhookUrl: selected.webhookUrl || '',
+          webhookSecret: selected.webhookSecret || ''
+        }));
+      } else {
+        setTestForm(prev => ({ ...prev, selectedFormulario: value }));
+      }
+    } else {
+      setTestForm(prev => ({ ...prev, [name]: value }));
+    }
+  };
 
-
-        // 6. Mapear campos del formulario a campos de Contacto
-        const contactData = {};
-        mappings.forEach(mapping => {
-            if (body[mapping.formField]) {
-                // Asegurar que el valor no sea una cadena vacía si el campo debe ser nullable
-                const value = body[mapping.formField].toString().trim();
-                contactData[mapping.contactField] = value.length > 0 ? value : null;
-            }
-        });
-
-        // 7. Establecer datos por defecto y etiquetas
-        // Los valores por defecto se aplican solo si no fueron mapeados
-        contactData.estado = contactData.estado || 'Activo';
-        contactData.fechaCreacion = contactData.fechaCreacion || new Date();
-        contactData.userId = formulario.userId;
-
-        // Combina etiquetas del formulario (si existen) con las etiquetas del formulario en DB
-        const formEtiquetas = safeJsonParse(contactData.etiquetas);
-        contactData.etiquetas = [...new Set([...formEtiquetas, ...formularioEtiquetas])];
-
-        console.log('Creando contacto con datos:', contactData);
-
-        // 8. Crear el Contacto (Usando método create de Prisma)
-        const newContact = await prisma.contacto.create({
-            data: {
-                // Mapeo directo y defensivo de campos. 
-                // Usamos la coalescencia (||) para asegurar que los campos opcionales no sean 'undefined'.
-                nombre: contactData.nombre || null,
-                apellidos: contactData.apellidos || null,
-                email: contactData.email || null,
-                telefono: contactData.telefono || null,
-                empresa: contactData.empresa || null,
-                estado: contactData.estado,
-                fechaCreacion: contactData.fechaCreacion,
-                origen: 'Formulario', // Origen fijo
-                direccion: contactData.direccion || null,
-                localidad: contactData.localidad || null,
-                comunidad: contactData.comunidad || null,
-                pais: contactData.pais || null,
-                cp: contactData.cp || null,
-                fechaCumpleanos: contactData.fechaCumpleanos || null,
-                // Prisma requiere un Array/Objeto para JSONB. Si está vacío, debe ser [].
-                etiquetas: contactData.etiquetas.length > 0 ? contactData.etiquetas : [],
-                userId: contactData.userId,
-                // Los demás campos (createdAt, updatedAt) son gestionados por el esquema de Prisma.
-            }
-        });
-
-        console.log('Contacto creado:', newContact);
-
-        return NextResponse.json({ success: true, contactId: newContact.id }, { status: 200 });
-
+  const handleTestSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(testForm.webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          nombre: testForm.nombre,
+          apellidos: testForm.apellido,
+          email: testForm.email,
+          webhook_secret: testForm.webhookSecret
+        }).toString()
+      });
+      if (response.ok) {
+        setWebhookLogs(prev => [...prev, {
+          id: prev.length + 1,
+          timestamp: new Date().toISOString(),
+          formularioId: 'test',
+          data: { test: true, nombre: testForm.nombre, apellidos: testForm.apellido, email: testForm.email, webhook_secret: testForm.webhookSecret }
+        }]);
+        alert('Test enviado correctamente');
+      } else {
+        alert('Error en el test: ' + response.status);
+      }
     } catch (error) {
-        
-        // 🚨 Manejo de errores de Prisma 🚨
-        if (error.code) {
-             console.error(`Error de Prisma (${error.code}) en el Webhook para ID ${connectionId || 'desconocido'}:`, error.message);
-        } else {
-             console.error(`Error genérico en el Webhook para ID ${connectionId || 'desconocido'}:`, error);
-        }
-
-        // Error P2002: Fallo de restricción única (ej. email ya existe)
-        if (error.code === 'P2002') { 
-             return NextResponse.json({ error: 'El contacto ya existe (Unique Constraint Failed)' }, { status: 409 });
-        }
-        
-        // Otros errores, incluyendo errores de conexión a DB
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+      alert('Error: ' + error.message);
     }
-}
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="text-center p-8">Cargando...</div>
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <DashboardLayout>
+      <div className="min-h-full">
+        <div className="mb-6">
+          <h1 className="text-xl font-bold text-slate-900">Salud del sitio</h1>
+        </div>
+
+        <div className="space-y-6">
+          {/* API Key Section */}
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">API Key</h2>
+            <div className="p-4 bg-slate-900 rounded-lg">
+              <code className="text-white text-lg font-mono">{user?.webhookSecret}</code>
+            </div>
+          </div>
+
+          {/* Webhooks Section */}
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Webhooks</h2>
+            <div className="space-y-4">
+              {formularios.filter(f => f.webhookUrl).map(formulario => (
+                <div key={formulario.id} className="flex items-center justify-between p-4 border border-slate-200 rounded-lg">
+                  <div>
+                    <p className="font-medium text-slate-900">{formulario.nombre}</p>
+                    <p className="text-sm text-slate-600">{formulario.webhookUrl}</p>
+                    <p className="text-sm text-slate-500">Secret: {formulario.webhookSecret}</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      formulario.estado === 'activado' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {formulario.estado}
+                    </span>
+                  </div>
+                </div>
+              ))}
+              {formularios.filter(f => f.webhookUrl).length === 0 && (
+                <p className="text-slate-500">No hay webhooks configurados.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Console Section */}
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-slate-900">Consola de Webhooks</h2>
+              <div className="flex space-x-2">
+                <button
+                  onClick={toggleListening}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg ${
+                    listening ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'
+                  } hover:opacity-80`}
+                >
+                  <Icon icon="heroicons:play" className="w-4 h-4" />
+                  <span>{listening ? 'Escuchando' : 'Play'}</span>
+                </button>
+                <button
+                  onClick={refreshLogs}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                >
+                  <Icon icon="heroicons:arrow-path" className="w-4 h-4" />
+                  <span>Refrescar</span>
+                </button>
+              </div>
+            </div>
+            <div className="bg-slate-900 text-green-400 p-4 rounded-lg font-mono text-sm h-24 overflow-y-auto">
+              {webhookLogs.length > 0 ? (
+                webhookLogs.map(log => (
+                  <div key={log.id} className="mb-4">
+                    <div className="text-yellow-400">[{new Date(log.timestamp).toLocaleString()}] Webhook recibido para formulario {log.formularioId}:</div>
+                    <pre className="text-green-300">{JSON.stringify(log.data, null, 2)}</pre>
+                  </div>
+                ))
+              ) : (
+                <div className="text-slate-400">No hay logs disponibles.</div>
+              )}
+            </div>
+          </div>
+
+          {/* Test Form Section */}
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">Probar Webhook</h2>
+            <form onSubmit={handleTestSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="selectedFormulario" className="block text-sm font-medium text-slate-700 mb-1">Seleccionar Formulario</label>
+                <select
+                  id="selectedFormulario"
+                  name="selectedFormulario"
+                  value={testForm.selectedFormulario}
+                  onChange={handleTestChange}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-700"
+                >
+                  <option value="">Seleccionar formulario</option>
+                  {formularios.filter(f => f.webhookUrl).map(formulario => (
+                    <option key={formulario.id} value={formulario.id}>{formulario.nombre}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="nombre" className="block text-sm font-medium text-slate-700 mb-1">Nombre</label>
+                  <input
+                    type="text"
+                    id="nombre"
+                    name="nombre"
+                    value={testForm.nombre}
+                    onChange={handleTestChange}
+                    required
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-700"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="apellido" className="block text-sm font-medium text-slate-700 mb-1">Apellido</label>
+                  <input
+                    type="text"
+                    id="apellido"
+                    name="apellido"
+                    value={testForm.apellido}
+                    onChange={handleTestChange}
+                    required
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-700"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={testForm.email}
+                    onChange={handleTestChange}
+                    required
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-700"
+                  />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="webhookUrl" className="block text-sm font-medium text-slate-700 mb-1">Webhook URL</label>
+                <input
+                  type="url"
+                  id="webhookUrl"
+                  name="webhookUrl"
+                  value={testForm.webhookUrl}
+                  onChange={handleTestChange}
+                  required
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-700"
+                  placeholder="https://..."
+                />
+              </div>
+              <div>
+                <label htmlFor="webhookSecret" className="block text-sm font-medium text-slate-700 mb-1">Webhook Secret</label>
+                <input
+                  type="text"
+                  id="webhookSecret"
+                  name="webhookSecret"
+                  value={testForm.webhookSecret}
+                  onChange={handleTestChange}
+                  required
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-700"
+                />
+              </div>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+              >
+                Probar
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </DashboardLayout>
+  );
+};
+
+export default SaludSitioPage;

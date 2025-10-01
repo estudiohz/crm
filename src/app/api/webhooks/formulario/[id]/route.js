@@ -9,6 +9,7 @@ function safeJsonParse(jsonString) {
         return [];
     }
     try {
+        // Aseguramos que el resultado sea un array para evitar errores posteriores.
         const parsed = JSON.parse(jsonString);
         return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
@@ -75,7 +76,6 @@ export async function POST(request, { params }) {
         delete body.webhook_secret; // Remover la clave secreta del cuerpo del contacto
         
         // Asumiendo que Prisma devuelve los campos JSONB como strings, los parseamos.
-        // Si tu configuración de Prisma ya los devuelve como objetos, puedes omitir el safeJsonParse.
         const mappings = safeJsonParse(formulario.mappings);
         const formularioEtiquetas = safeJsonParse(formulario.etiquetas);
 
@@ -84,18 +84,20 @@ export async function POST(request, { params }) {
         const contactData = {};
         mappings.forEach(mapping => {
             if (body[mapping.formField]) {
-                contactData[mapping.contactField] = body[mapping.formField];
+                // Asegurar que el valor no sea una cadena vacía si el campo debe ser nullable
+                const value = body[mapping.formField].toString().trim();
+                contactData[mapping.contactField] = value.length > 0 ? value : null;
             }
         });
 
         // 7. Establecer datos por defecto y etiquetas
+        // Los valores por defecto se aplican solo si no fueron mapeados
         contactData.estado = contactData.estado || 'Activo';
-        contactData.fechaCreacion = new Date();
+        contactData.fechaCreacion = contactData.fechaCreacion || new Date();
         contactData.userId = formulario.userId;
 
         // Combina etiquetas del formulario (si existen) con las etiquetas del formulario en DB
-        const formEtiquetas = contactData.etiquetas || [];
-        // Asegúrate de que las etiquetas sean un array antes de combinarlas
+        const formEtiquetas = safeJsonParse(contactData.etiquetas);
         contactData.etiquetas = [...new Set([...formEtiquetas, ...formularioEtiquetas])];
 
         console.log('Creando contacto con datos:', contactData);
@@ -103,8 +105,8 @@ export async function POST(request, { params }) {
         // 8. Crear el Contacto (Usando método create de Prisma)
         const newContact = await prisma.contacto.create({
             data: {
-                // Mapeo directo de campos de Contacto.
-                // Asegúrate de que 'etiquetas' sea un campo JSONB en tu esquema.
+                // Mapeo directo y defensivo de campos. 
+                // Usamos la coalescencia (||) para asegurar que los campos opcionales no sean 'undefined'.
                 nombre: contactData.nombre || null,
                 apellidos: contactData.apellidos || null,
                 email: contactData.email || null,
@@ -119,9 +121,10 @@ export async function POST(request, { params }) {
                 pais: contactData.pais || null,
                 cp: contactData.cp || null,
                 fechaCumpleanos: contactData.fechaCumpleanos || null,
-                etiquetas: contactData.etiquetas, // Prisma maneja el JSON/JSONB
+                // Prisma requiere un Array/Objeto para JSONB. Si está vacío, debe ser [].
+                etiquetas: contactData.etiquetas.length > 0 ? contactData.etiquetas : [],
                 userId: contactData.userId,
-                // createdAt y updatedAt son manejados por el @default(now()) y @updatedAt
+                // Los demás campos (createdAt, updatedAt) son gestionados por el esquema de Prisma.
             }
         });
 
@@ -130,13 +133,20 @@ export async function POST(request, { params }) {
         return NextResponse.json({ success: true, contactId: newContact.id }, { status: 200 });
 
     } catch (error) {
-        console.error(`Error en el Webhook para ID ${connectionId || 'desconocido'}:`, error);
         
-        // Si el error es de Prisma (P2002: unique constraint failed), puedes devolver un 409 Conflict
-        // if (error.code === 'P2002') { 
-        //     return NextResponse.json({ error: 'El email ya existe' }, { status: 409 });
-        // }
+        // 🚨 Manejo de errores de Prisma 🚨
+        if (error.code) {
+             console.error(`Error de Prisma (${error.code}) en el Webhook para ID ${connectionId || 'desconocido'}:`, error.message);
+        } else {
+             console.error(`Error genérico en el Webhook para ID ${connectionId || 'desconocido'}:`, error);
+        }
 
-        return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 });
+        // Error P2002: Fallo de restricción única (ej. email ya existe)
+        if (error.code === 'P2002') { 
+             return NextResponse.json({ error: 'El contacto ya existe (Unique Constraint Failed)' }, { status: 409 });
+        }
+        
+        // Otros errores, incluyendo errores de conexión a DB
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
