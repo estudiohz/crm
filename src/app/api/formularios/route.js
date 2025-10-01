@@ -137,7 +137,7 @@ export async function POST(request) {
     const newFormulario = insertResult[0];
 
     // Update webhook URL with actual ID
-    const actualWebhookUrl = `https://crm-panel.g0ncz4.easypanel.host/webhooks/formulario/${newFormulario.id}`;
+    const actualWebhookUrl = `https://crm-panel.g0ncz4.easypanel.host/api/webhooks/formulario/${newFormulario.id}`;
     await prisma.$queryRaw`
       UPDATE "Formulario"
       SET "webhookUrl" = ${actualWebhookUrl}

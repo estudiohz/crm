@@ -13,7 +13,8 @@ const SaludSitioPage = () => {
     nombre: '',
     apellido: '',
     webhookUrl: '',
-    webhookSecret: ''
+    webhookSecret: '',
+    selectedFormulario: ''
   });
   const [loading, setLoading] = useState(true);
 
@@ -62,7 +63,21 @@ const SaludSitioPage = () => {
 
   const handleTestChange = (e) => {
     const { name, value } = e.target;
-    setTestForm(prev => ({ ...prev, [name]: value }));
+    if (name === 'selectedFormulario') {
+      const selected = formularios.find(f => f.id.toString() === value);
+      if (selected) {
+        setTestForm(prev => ({
+          ...prev,
+          selectedFormulario: value,
+          webhookUrl: selected.webhookUrl || '',
+          webhookSecret: selected.webhookSecret || ''
+        }));
+      } else {
+        setTestForm(prev => ({ ...prev, selectedFormulario: value }));
+      }
+    } else {
+      setTestForm(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleTestSubmit = async (e) => {
@@ -178,6 +193,21 @@ const SaludSitioPage = () => {
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Probar Webhook</h2>
             <form onSubmit={handleTestSubmit} className="space-y-4">
+              <div>
+                <label htmlFor="selectedFormulario" className="block text-sm font-medium text-slate-700 mb-1">Seleccionar Formulario</label>
+                <select
+                  id="selectedFormulario"
+                  name="selectedFormulario"
+                  value={testForm.selectedFormulario}
+                  onChange={handleTestChange}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-700"
+                >
+                  <option value="">Seleccionar formulario</option>
+                  {formularios.filter(f => f.webhookUrl).map(formulario => (
+                    <option key={formulario.id} value={formulario.id}>{formulario.nombre}</option>
+                  ))}
+                </select>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="nombre" className="block text-sm font-medium text-slate-700 mb-1">Nombre</label>
