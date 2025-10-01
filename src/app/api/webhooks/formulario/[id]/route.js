@@ -9,57 +9,66 @@ function safeJsonParse(jsonString) {
         return [];
     }
     try {
-        // Aseguramos que el resultado sea un array para evitar errores posteriores.
         const parsed = JSON.parse(jsonString);
         return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
-        console.warn('Error al parsear JSON:', e);
+        console.warn('Error al parsear JSON de DB:', e);
         return [];
     }
 }
 
 export async function POST(request, { params }) {
     let connectionId;
+    let body; // Declaramos 'body' fuera del try/catch anidado
+
     try {
         console.log('Webhook POST request received for params:', params);
+        
         // 1. Obtener y validar el ID
         connectionId = parseInt(params.id);
-        console.log('Parsed connectionId:', connectionId);
         if (isNaN(connectionId)) {
-            console.log('Invalid connectionId, returning 400');
             return NextResponse.json({ error: 'ID de formulario no válido' }, { status: 400 });
         }
+        console.log('Parsed connectionId:', connectionId);
 
-        let body;
-        const contentType = request.headers.get('content-type');
+        const contentType = request.headers.get('content-type') || '';
         console.log('Content-Type:', contentType);
 
-        // 2. Parsear el cuerpo de la solicitud (Manejo de form-data y JSON)
-        if (contentType && (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data'))) {
-            console.log('Parsing as form-data');
-            const formData = await request.formData();
-            body = Object.fromEntries(formData.entries());
-            // Convertir valores numéricos si es necesario, ya que formData.entries() devuelve strings
-        } else {
-            // Asume JSON si no es form-data
-            console.log('Attempting to parse as JSON');
+        // 2. Parsear el cuerpo de la solicitud (Manejo estricto de form-data y JSON)
+        if (contentType.includes('application/json')) {
+            console.log('Parsing as JSON');
             try {
                 body = await request.json();
             } catch (e) {
-                // Si no puede parsear como JSON, el body es irreconocible.
                 console.warn('Body de solicitud no es JSON válido.', e);
-                return NextResponse.json({ error: 'Formato de datos no compatible' }, { status: 400 });
+                return NextResponse.json({ error: 'Body no es JSON válido' }, { status: 400 });
             }
+        } else if (contentType.includes('application/x-www-form-urlencoded') || contentType.includes('multipart/form-data')) {
+            console.log('Parsing as form-data');
+            try {
+                const formData = await request.formData();
+                // 💡 MEJORA: Convertir formData a un objeto plano de forma segura
+                body = Object.fromEntries(formData.entries());
+            } catch (e) {
+                console.error('Error al leer FormData:', e);
+                return NextResponse.json({ error: 'Error al procesar datos de formulario' }, { status: 400 });
+            }
+        } else {
+            console.warn('Content-Type no compatible:', contentType);
+            // Intentamos leerlo como texto genérico si falla
+            const textBody = await request.text();
+            console.warn('Received body as text (unsupported format):', textBody.substring(0, 100) + '...');
+            return NextResponse.json({ error: 'Formato de datos no compatible (Debe ser JSON o Form-Data)' }, { status: 400 });
         }
+        
+        // 🚨 Log del Body recibido 🚨
         console.log('Parsed body:', body);
-
         console.log('Webhook received for formulario:', connectionId, 'body keys:', Object.keys(body));
 
+
         // 3. Buscar el formulario (Usando método findUnique de Prisma)
-        console.log('Querying formulario with id:', connectionId);
         const formulario = await prisma.formulario.findUnique({
             where: { id: connectionId },
-            // Selecciona explícitamente los campos necesarios
             select: {
                 id: true,
                 webhookSecret: true,
@@ -68,27 +77,23 @@ export async function POST(request, { params }) {
                 userId: true,
             }
         });
-        console.log('Formulario found:', !!formulario);
-        if (formulario) {
-            console.log('Formulario details:', { id: formulario.id, webhookSecret: formulario.webhookSecret ? 'present' : 'missing', userId: formulario.userId });
-        }
-
+        
         if (!formulario) {
             return NextResponse.json({ error: 'Formulario no encontrado' }, { status: 404 });
         }
+        console.log('Formulario found:', !!formulario);
+
 
         // 4. Verificar la clave secreta
         const providedSecret = body.webhook_secret;
-        console.log('Provided secret:', providedSecret ? 'present' : 'missing');
-        console.log('Expected secret:', formulario.webhookSecret ? 'present' : 'missing');
         if (!providedSecret || providedSecret !== formulario.webhookSecret) {
-            console.warn(`Intento de acceso denegado para ID: ${connectionId}. Clave inválida.`);
+            console.warn(`Intento de acceso denegado para ID: ${connectionId}. Clave inválida. Provided: ${providedSecret}, Expected: ${formulario.webhookSecret}`);
             return NextResponse.json({ error: 'Clave secreta de webhook inválida' }, { status: 403 });
         }
         console.log('Secret verification passed');
         
         // 5. Preparar y parsear mappings y etiquetas
-        delete body.webhook_secret; // Remover la clave secreta del cuerpo del contacto
+        delete body.webhook_secret; // Remover la clave secreta
         console.log('Body after removing secret:', body);
 
         // Asumiendo que Prisma devuelve los campos JSONB como strings, los parseamos.
@@ -99,55 +104,37 @@ export async function POST(request, { params }) {
         // 6. Mapear campos del formulario a campos de Contacto
         const contactData = {};
         mappings.forEach(mapping => {
-            
-            // 💡 CORRECCIÓN CLAVE: Usamos 'in' para verificar si la clave existe, incluso si el valor es "" (cadena vacía).
             if (mapping.formField in body) {
-                
-                // Obtenemos el valor de forma segura, asegurando que sea un string.
                 const rawValue = body[mapping.formField];
+                // Aseguramos que el valor final sea string (trim) o null si está vacío/nulo
                 const value = rawValue !== null && rawValue !== undefined ? rawValue.toString().trim() : '';
-                
-                // Asignamos null si el valor final es una cadena vacía, 
-                // lo cual es aceptable para campos nullable en la DB.
                 contactData[mapping.contactField] = value.length > 0 ? value : null;
-
                 console.log(`Mapped: ${mapping.formField} -> ${mapping.contactField} = ${contactData[mapping.contactField]}`);
             }
         });
-        console.log('ContactData after mapping:', contactData);
+        console.log('ContactData before defaults:', contactData);
 
 
         // 7. Establecer datos por defecto y etiquetas
-        // Los valores por defecto se aplican solo si no fueron mapeados
         contactData.estado = contactData.estado || 'Activo';
         contactData.fechaCreacion = contactData.fechaCreacion || new Date();
         contactData.userId = formulario.userId;
 
-        // Combina etiquetas del formulario (si existen) con las etiquetas del formulario en DB
-        // El campo 'etiquetas' en contactData debe provenir del mapeo
         const formEtiquetasRaw = contactData.etiquetas;
         const formEtiquetas = safeJsonParse(formEtiquetasRaw);
         contactData.etiquetas = [...new Set([...formEtiquetas, ...formularioEtiquetas])];
 
-        console.log('Creando contacto con datos:', contactData);
+        console.log('Creando contacto con datos finales:', contactData);
 
-        // 8. Crear el Contacto (Usando método create de Prisma)
-        console.log('Attempting to create contacto in database');
-        
-        // 💡 VERIFICACIÓN DE CAMPO REQUERIDO: Si 'nombre' es requerido por la DB, 
-        // debemos asegurarnos de que no sea null ANTES de la inserción, o cambiar el esquema.
+
+        // 8. Crear el Contacto (Pre-validación de campo requerido)
         if (contactData.nombre === null) {
-            console.error("Error de Validacion: El campo 'nombre' es nulo, pero la DB lo requiere.");
-            // Puedes optar por asignar un valor por defecto o retornar un error 400
-            // contactData.nombre = 'Nombre por defecto'; 
+            console.error("Error de Validacion: El campo 'nombre' es nulo/vacío, pero la DB lo requiere.");
             return NextResponse.json({ error: "El campo 'nombre' es obligatorio y no fue provisto." }, { status: 400 });
         }
 
-
         const newContact = await prisma.contacto.create({
             data: {
-                // El mapeo defensivo (|| null) ya no es tan necesario si el mapeo ya maneja null, 
-                // pero lo mantenemos para seguridad contra 'undefined'.
                 nombre: contactData.nombre || null,
                 apellidos: contactData.apellidos || null,
                 email: contactData.email || null,
@@ -180,21 +167,16 @@ export async function POST(request, { params }) {
         
         if (error.code) {
             console.error(`${errorMessage} Error de Prisma (${error.code})`, error.message);
-        } else {
-            console.error(`${errorMessage} Error genérico:`, error);
         }
 
-        // Error P2002: Fallo de restricción única (ej. email ya existe)
         if (error.code === 'P2002') {
             return NextResponse.json({ error: 'El contacto ya existe (Unique Constraint Failed)' }, { status: 409 });
         }
-        // Error P2011: Fallo de restricción de not-null (ej. nombre nulo)
         if (error.code === 'P2011') {
             return NextResponse.json({ error: 'Datos incompletos. Un campo obligatorio no fue provisto (NOT NULL constraint failed).' }, { status: 400 });
         }
 
-
-        // Otros errores, incluyendo errores de conexión a DB
+        // Si es un error interno no capturado por código específico
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
