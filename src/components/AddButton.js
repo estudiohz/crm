@@ -20,6 +20,7 @@ export default function AddButton() {
   const isCuentasMode = lowerPathname.includes('/cuentas');
   const isContactosMode = lowerPathname.includes('/contactos');
   const isEmpresasMode = lowerPathname.includes('/empresas');
+  const isEtiquetasMode = lowerPathname.includes('/etiquetas');
   const isFacturasMode = lowerPathname.includes('/facturas');
   const isFormulariosMode = lowerPathname.includes('/formularios');
 
@@ -35,6 +36,8 @@ export default function AddButton() {
     buttonText = 'Añadir Empresa';
   } else if (isFacturasMode) {
     buttonText = 'Añadir Factura';
+  } else if (isEtiquetasMode) {
+    buttonText = 'Añadir Etiqueta';
   } else if (isFormulariosMode) {
     buttonText = 'Añadir Formulario';
   }
@@ -49,6 +52,8 @@ export default function AddButton() {
     targetLink = '/contactos/add';
   } else if (isEmpresasMode) {
     targetLink = '/empresas/add';
+  } else if (isEtiquetasMode) {
+    targetLink = '/etiquetas/add';
   } else if (isFacturasMode) {
     targetLink = '/facturas/add';
   } else if (isFormulariosMode) {

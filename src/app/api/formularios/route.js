@@ -17,16 +17,78 @@ export async function GET(request) {
     }
 
     const formularios = await prisma.$queryRaw`
-      SELECT * FROM "Formulario" WHERE "userId" = ${userId}
+      SELECT "id", "nombre", "url", "email", "estado", "etiquetas", "mappings", "webhookUrl", "webhookSecret", "userId", "createdAt", "updatedAt" FROM "Formulario" WHERE "userId" = ${userId}
     `;
 
-    // Parse mappings JSON
-    const formulariosWithParsedMappings = formularios.map(formulario => ({
-      ...formulario,
-      mappings: formulario.mappings ? JSON.parse(formulario.mappings) : []
-    }));
+    // Parse mappings and etiquetas JSON with robust handling
+    const formulariosWithParsedData = formularios.map(formulario => {
+      let mappings = [];
+      let etiquetas = [];
 
-    return NextResponse.json(formulariosWithParsedMappings, { status: 200 });
+      if (formulario.mappings) {
+        // Handle different data formats from database
+        if (Array.isArray(formulario.mappings)) {
+          // Already parsed as array
+          mappings = formulario.mappings;
+        } else if (typeof formulario.mappings === 'string') {
+          if (formulario.mappings === 'null' || formulario.mappings === '') {
+            mappings = [];
+          } else {
+            try {
+              mappings = JSON.parse(formulario.mappings);
+              // Ensure it's an array
+              if (!Array.isArray(mappings)) {
+                mappings = [];
+              }
+            } catch (parseError) {
+              console.warn('JSON parse error for mappings in formulario', formulario.id, ':', parseError.message, '- Raw value:', formulario.mappings);
+              mappings = [];
+            }
+          }
+        } else {
+          mappings = [];
+        }
+      }
+
+      if (formulario.etiquetas) {
+        // Handle different data formats from database
+        if (Array.isArray(formulario.etiquetas)) {
+          // Already parsed as array
+          etiquetas = formulario.etiquetas;
+        } else if (typeof formulario.etiquetas === 'string') {
+          if (formulario.etiquetas === 'null' || formulario.etiquetas === '') {
+            etiquetas = [];
+          } else {
+            try {
+              etiquetas = JSON.parse(formulario.etiquetas);
+              // Ensure it's an array
+              if (!Array.isArray(etiquetas)) {
+                etiquetas = [];
+              }
+            } catch (parseError) {
+              console.warn('JSON parse error for etiquetas in formulario', formulario.id, ':', parseError.message, '- Raw value:', formulario.etiquetas);
+              // If JSON parsing fails, treat as single string value
+              if (formulario.etiquetas.trim()) {
+                etiquetas = [formulario.etiquetas.trim()];
+                console.log('Converted string "' + formulario.etiquetas + '" to array:', etiquetas);
+              } else {
+                etiquetas = [];
+              }
+            }
+          }
+        } else {
+          etiquetas = [];
+        }
+      }
+
+      return {
+        ...formulario,
+        mappings,
+        etiquetas
+      };
+    });
+
+    return NextResponse.json(formulariosWithParsedData, { status: 200 });
   } catch (error) {
     console.error('Error al obtener formularios:', error);
     return NextResponse.json({ message: 'Error interno del servidor' }, { status: 500 });
@@ -40,7 +102,7 @@ export async function POST(request) {
     console.log('Datos recibidos del frontend:', body);
 
     // Desestructuración de los datos
-    const { nombre, url, email, estado, mappings } = body;
+    const { nombre, url, email, estado, etiquetas, mappings } = body;
 
     // Get userId from body or assume it's passed
     const userId = body.userId; // Assuming it's sent from frontend
@@ -63,11 +125,12 @@ export async function POST(request) {
       .join('');
 
     const mappingsJson = mappings ? JSON.stringify(mappings) : null;
+    const etiquetasJson = etiquetas ? JSON.stringify(etiquetas) : null;
 
     // Insert using raw SQL
     const insertResult = await prisma.$queryRaw`
-      INSERT INTO "Formulario" ("nombre", "url", "email", "estado", "mappings", "webhookUrl", "webhookSecret", "userId", "createdAt", "updatedAt")
-      VALUES (${nombre}, ${url}, ${email}, ${estado}, ${mappingsJson}::jsonb, '', ${webhookSecret}, ${userId}, NOW(), NOW())
+      INSERT INTO "Formulario" ("nombre", "url", "email", "estado", "etiquetas", "mappings", "webhookUrl", "webhookSecret", "userId", "createdAt", "updatedAt")
+      VALUES (${nombre}, ${url}, ${email}, ${estado}, ${etiquetasJson}::jsonb, ${mappingsJson}::jsonb, '', ${webhookSecret}, ${userId}, NOW(), NOW())
       RETURNING *
     `;
 
@@ -100,8 +163,9 @@ export async function PUT(request) {
     const body = await request.json();
     console.log('Datos recibidos para actualizar:', body);
 
-    const { id, nombre, url, email, estado, mappings, webhookUrl, webhookSecret } = body;
+    const { id, nombre, url, email, estado, etiquetas, mappings, webhookUrl, webhookSecret } = body;
 
+    const etiquetasJson = etiquetas !== undefined ? (etiquetas ? JSON.stringify(etiquetas) : null) : undefined;
     const mappingsJson = mappings !== undefined ? (mappings ? JSON.stringify(mappings) : null) : undefined;
 
     // Build update query dynamically
@@ -125,6 +189,10 @@ export async function PUT(request) {
       updateFields.push(`"estado" = $${paramIndex++}`);
       values.push(estado);
     }
+    if (etiquetasJson !== undefined) {
+      updateFields.push(`"etiquetas" = $${paramIndex++}::jsonb`);
+      values.push(etiquetasJson);
+    }
     if (mappingsJson !== undefined) {
       updateFields.push(`"mappings" = $${paramIndex++}::jsonb`);
       values.push(mappingsJson);
@@ -142,14 +210,13 @@ export async function PUT(request) {
 
     values.push(parseInt(id)); // for WHERE
 
-    const updateQuery = `
-      UPDATE "Formulario"
-      SET ${updateFields.join(', ')}
-      WHERE "id" = $${paramIndex}
-      RETURNING *
-    `;
+    // Build the query dynamically
+    const setClause = updateFields.join(', ');
+    const whereClause = `"id" = $${paramIndex}`;
 
-    const updatedFormulario = await prisma.$queryRaw(updateQuery, ...values);
+    const query = `UPDATE "Formulario" SET ${setClause} WHERE ${whereClause} RETURNING *`;
+
+    const updatedFormulario = await prisma.$queryRawUnsafe(query, ...values);
 
     console.log('Formulario actualizado en la base de datos:', updatedFormulario[0]);
 

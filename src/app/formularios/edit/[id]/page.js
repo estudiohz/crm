@@ -2,16 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-import DashboardLayout from '../../../components/DashboardLayout';
-import { useRouter } from 'next/navigation';
+import DashboardLayout from '../../../../components/DashboardLayout';
+import { useRouter, useParams } from 'next/navigation';
 
-// Contact fields for mapping
 const contactFields = [
   'nombre', 'apellidos', 'email', 'telefono', 'empresa', 'estado',
   'fechaCreacion', 'origen', 'direccion', 'localidad', 'comunidad', 'pais', 'cp'
 ];
 
-// Initial form data
 const initialFormData = {
   nombre: '',
   url: '',
@@ -21,17 +19,20 @@ const initialFormData = {
   mappings: []
 };
 
-const AddFormularioPage = () => {
+const EditFormularioPage = () => {
   const [formData, setFormData] = useState(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState('');
   const [user, setUser] = useState(null);
-  const [webhookInfo, setWebhookInfo] = useState(null);
   const [tagInput, setTagInput] = useState('');
   const [showTagDropdown, setShowTagDropdown] = useState(false);
   const [availableTags, setAvailableTags] = useState([]);
   const [etiquetas, setEtiquetas] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [webhookInfo, setWebhookInfo] = useState(null);
   const router = useRouter();
+  const params = useParams();
+  const id = params.id;
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -49,18 +50,43 @@ const AddFormularioPage = () => {
         if (response.ok) {
           const etiquetasData = await response.json();
           setEtiquetas(etiquetasData);
-          // Set available tags from etiquetas
           setAvailableTags(etiquetasData.map(etiqueta => etiqueta.nombre));
-        } else {
-          console.error('Error fetching etiquetas');
         }
       } catch (error) {
         console.error('Error fetching etiquetas:', error);
       }
     };
 
+    const fetchFormulario = async () => {
+      try {
+        const response = await fetch(`/api/formularios/${id}`);
+        if (!response.ok) {
+          throw new Error('No se pudo obtener el formulario');
+        }
+        const formularioData = await response.json();
+        setFormData({
+          nombre: formularioData.nombre || '',
+          url: formularioData.url || '',
+          email: formularioData.email || '',
+          estado: formularioData.estado || 'activado',
+          etiquetas: formularioData.etiquetas || [],
+          mappings: formularioData.mappings || []
+        });
+        setWebhookInfo({
+          url: formularioData.webhookUrl,
+          secret: formularioData.webhookSecret
+        });
+      } catch (error) {
+        console.error('Error fetching formulario:', error);
+        setMessage('Error al cargar el formulario.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchEtiquetas();
-  }, [user]);
+    fetchFormulario();
+  }, [user, id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -113,11 +139,9 @@ const AddFormularioPage = () => {
 
   const addTag = async (tag) => {
     if (!formData.etiquetas.includes(tag)) {
-      // Check if tag already exists in etiquetas
       const existingEtiqueta = etiquetas.find(etiqueta => etiqueta.nombre === tag);
 
       if (!existingEtiqueta) {
-        // Create new etiqueta with default color
         try {
           const response = await fetch('/api/etiquetas', {
             method: 'POST',
@@ -151,6 +175,39 @@ const AddFormularioPage = () => {
     setShowTagDropdown(false);
   };
 
+  const regenerateWebhook = async () => {
+    if (!user) return;
+
+    try {
+      const webhookSecret = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+
+      const response = await fetch(`/api/formularios/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          webhookSecret
+        }),
+      });
+
+      if (response.ok) {
+        setWebhookInfo(prev => ({
+          ...prev,
+          secret: webhookSecret
+        }));
+        setMessage('Clave secreta del webhook regenerada exitosamente.');
+      } else {
+        setMessage('Error al regenerar la clave secreta.');
+      }
+    } catch (error) {
+      console.error('Error regenerating webhook:', error);
+      setMessage('Error al regenerar la clave secreta.');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -163,35 +220,32 @@ const AddFormularioPage = () => {
     }
 
     try {
-      const response = await fetch('/api/formularios', {
-        method: 'POST',
+      const response = await fetch(`/api/formularios/${id}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          userId: user.id
-        }),
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
-        throw new Error('Error al añadir el formulario');
+        throw new Error('Error al actualizar el formulario');
       }
 
-      const newFormulario = await response.json();
-      console.log('Formulario añadido con éxito:', newFormulario);
+      const updatedFormulario = await response.json();
+      console.log('Formulario actualizado con éxito:', updatedFormulario);
 
-      setWebhookInfo({ url: newFormulario.webhookUrl, secret: newFormulario.webhookSecret });
-      setMessage('¡Formulario añadido con éxito!');
-      setIsSubmitting(false); // Reset button state
+      setMessage('¡Formulario actualizado con éxito! Redireccionando...');
+      setTimeout(() => {
+        router.push('/formularios');
+      }, 1500);
 
     } catch (error) {
       console.error('Error en el envío del formulario:', error);
-      setMessage('Error al añadir el formulario. Inténtalo de nuevo.');
+      setMessage('Error al actualizar el formulario. Inténtalo de nuevo.');
       setIsSubmitting(false);
     }
   };
-
 
   const BackButton = () => (
     <a
@@ -203,16 +257,23 @@ const AddFormularioPage = () => {
     </a>
   );
 
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="text-center p-8">Cargando formulario...</div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="min-h-full">
         <div className="mb-6 flex justify-between items-center w-[90%] mx-auto">
-          <h1 className="text-xl font-bold text-slate-900">Añadir Nuevo Formulario</h1>
+          <h1 className="text-xl font-bold text-slate-900">Editar Formulario</h1>
           <BackButton />
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md w-[96%] mx-auto">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Nombre del Formulario and Estado */}
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <label htmlFor="nombre" className="block text-sm font-medium text-slate-700 mb-1">Nombre de formulario</label>
@@ -242,7 +303,6 @@ const AddFormularioPage = () => {
               </div>
             </div>
 
-            {/* URL del Formulario and Email */}
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <label htmlFor="url" className="block text-sm font-medium text-slate-700 mb-1">URL del Formulario</label>
@@ -272,7 +332,6 @@ const AddFormularioPage = () => {
               </div>
             </div>
 
-            {/* Etiquetas */}
             <div>
               <label htmlFor="etiquetas" className="block text-sm font-medium text-slate-700 mb-1">Etiquetas</label>
               <div className="relative">
@@ -325,7 +384,6 @@ const AddFormularioPage = () => {
               </div>
             </div>
 
-            {/* Mapeo de Campos Personalizados */}
             <div>
               <h2 className="text-lg font-semibold text-slate-900 mb-2">Mapeo de Campos Personalizados</h2>
               <p className="text-sm text-slate-600 mb-4">Añade aquí cualquier campo adicional que tu formulario capture.</p>
@@ -398,12 +456,21 @@ const AddFormularioPage = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-green-700">Clave Secreta</label>
-                    <input
-                      type="text"
-                      value={webhookInfo.secret}
-                      readOnly
-                      className="w-full px-3 py-2 border border-green-300 rounded bg-green-50 text-green-800"
-                    />
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        value={webhookInfo.secret}
+                        readOnly
+                        className="flex-1 px-3 py-2 border border-green-300 rounded bg-green-50 text-green-800"
+                      />
+                      <button
+                        type="button"
+                        onClick={regenerateWebhook}
+                        className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                      >
+                        Regenerar
+                      </button>
+                    </div>
                     <p className="text-xs text-green-600 mt-1">Añade un campo hidden en tu formulario con el id 'webhook_secret'</p>
                   </div>
                 </div>
@@ -431,7 +498,7 @@ const AddFormularioPage = () => {
                 ) : (
                   <>
                     <Icon icon="heroicons:check-circle" className="w-5 h-5" />
-                    <span>Guardar Formulario</span>
+                    <span>Guardar Cambios</span>
                   </>
                 )}
               </button>
@@ -443,4 +510,4 @@ const AddFormularioPage = () => {
   );
 };
 
-export default AddFormularioPage;
+export default EditFormularioPage;

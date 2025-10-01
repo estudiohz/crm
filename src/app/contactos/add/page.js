@@ -20,6 +20,8 @@ const initialFormData = {
   comunidad: '',
   pais: 'España',
   cp: '',
+  fechaCumpleanos: '',
+  etiquetas: [],
 };
 
 const AddContactoPage = () => {
@@ -33,6 +35,10 @@ const AddContactoPage = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNewForm, setShowNewForm] = useState(false);
   const [newEmpresaData, setNewEmpresaData] = useState({ empresa: '', email: '', telefono: '', estado: 'Activo' });
+  const [tagInput, setTagInput] = useState('');
+  const [showTagDropdown, setShowTagDropdown] = useState(false);
+  const [availableTags, setAvailableTags] = useState([]);
+  const [etiquetas, setEtiquetas] = useState([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -58,7 +64,25 @@ const AddContactoPage = () => {
         console.error('Error fetching empresas:', error);
       }
     };
+
+    const fetchEtiquetas = async () => {
+      try {
+        const response = await fetch(`/api/etiquetas?userId=${user.id}`);
+        if (response.ok) {
+          const etiquetasData = await response.json();
+          setEtiquetas(etiquetasData);
+          // Set available tags from etiquetas
+          setAvailableTags(etiquetasData.map(etiqueta => etiqueta.nombre));
+        } else {
+          console.error('Error fetching etiquetas');
+        }
+      } catch (error) {
+        console.error('Error fetching etiquetas:', error);
+      }
+    };
+
     fetchEmpresas();
+    fetchEtiquetas();
   }, [user]);
 
   const handleChange = (e) => {
@@ -121,10 +145,80 @@ const AddContactoPage = () => {
     }
   };
 
+  const handleTagInputChange = (e) => {
+    const value = e.target.value;
+    setTagInput(value);
+    setShowTagDropdown(value.length > 0);
+  };
+
+  const handleTagKeyDown = (e) => {
+    if (e.key === 'Enter' && tagInput.trim()) {
+      e.preventDefault();
+      addTag(tagInput.trim());
+    }
+  };
+
+  const addTag = async (tag) => {
+    if (!formData.etiquetas.includes(tag)) {
+      // Check if tag already exists in etiquetas
+      const existingEtiqueta = etiquetas.find(etiqueta => etiqueta.nombre === tag);
+
+      if (!existingEtiqueta) {
+        // Create new etiqueta with default color
+        try {
+          const response = await fetch('/api/etiquetas', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              nombre: tag,
+              color: '#efefef',
+              descripcion: '',
+              userId: user.id
+            }),
+          });
+
+          if (response.ok) {
+            const newEtiqueta = await response.json();
+            setEtiquetas([...etiquetas, newEtiqueta]);
+            setAvailableTags([...availableTags, tag]);
+          }
+        } catch (error) {
+          console.error('Error creating new etiqueta:', error);
+        }
+      }
+
+      setFormData((prevData) => ({
+        ...prevData,
+        etiquetas: [...prevData.etiquetas, tag]
+      }));
+    }
+    setTagInput('');
+    setShowTagDropdown(false);
+  };
+
+  const removeTag = (tagToRemove) => {
+    setFormData((prevData) => ({
+      ...prevData,
+      etiquetas: prevData.etiquetas.filter(tag => tag !== tagToRemove)
+    }));
+  };
+
+  const selectTag = (tag) => {
+    addTag(tag);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setMessage('');
+
+    if (!user || !user.id) {
+      setMessage('Usuario no encontrado. Inicia sesión nuevamente.');
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       const response = await fetch('/api/contactos', {
@@ -174,7 +268,8 @@ const AddContactoPage = () => {
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md w-[96%] mx-auto">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Line 1: Nombre and Apellidos */}
+            <div className="grid grid-cols-2 gap-6">
               <div>
                 <label htmlFor="nombre" className="block text-sm font-medium text-slate-700 mb-1">Nombre</label>
                 <input type="text" id="nombre" name="nombre" value={formData.nombre} onChange={handleChange} required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="Ej. Ana" />
@@ -184,7 +279,9 @@ const AddContactoPage = () => {
                 <input type="text" id="apellidos" name="apellidos" value={formData.apellidos} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 text-slate-700 focus:border-blue-500 transition duration-150" placeholder="Ej. García" />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* Line 2: Email and Teléfono */}
+            <div className="grid grid-cols-2 gap-6">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
                 <input type="email" id="email" name="email" value={formData.email} onChange={handleChange} required className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="ejemplo@acme.com" />
@@ -194,7 +291,59 @@ const AddContactoPage = () => {
                 <input type="tel" id="telefono" name="telefono" value={formData.telefono} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700" placeholder="+34 900 111 222" />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* Line 3: Dirección, Ciudad, CP, Comunidad */}
+            <div className="grid grid-cols-10 gap-6">
+              <div className="col-span-4">
+                <label htmlFor="direccion" className="block text-sm font-medium text-slate-700 mb-1">Dirección</label>
+                <input type="text" id="direccion" name="direccion" value={formData.direccion} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 text-slate-700 focus:border-blue-500 transition duration-150" placeholder="Ej. Calle Mayor 123" />
+              </div>
+              <div className="col-span-2">
+                <label htmlFor="localidad" className="block text-sm font-medium text-slate-700 mb-1">Ciudad</label>
+                <input type="text" id="localidad" name="localidad" value={formData.localidad} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 text-slate-700 focus:border-blue-500 transition duration-150" placeholder="Ej. Madrid" />
+              </div>
+              <div className="col-span-2">
+                <label htmlFor="cp" className="block text-sm font-medium text-slate-700 mb-1">CP</label>
+                <input type="number" id="cp" name="cp" value={formData.cp} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 text-slate-700 focus:border-blue-500 transition duration-150" placeholder="Ej. 28001" />
+              </div>
+              <div className="col-span-2">
+                <label htmlFor="comunidad" className="block text-sm font-medium text-slate-700 mb-1">Comunidad</label>
+                <select id="comunidad" name="comunidad" value={formData.comunidad} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700">
+                  <option value="">Seleccionar</option>
+                  <option value="Andalucía">Andalucía</option>
+                  <option value="Aragón">Aragón</option>
+                  <option value="Asturias">Asturias</option>
+                  <option value="Cantabria">Cantabria</option>
+                  <option value="Castilla-La Mancha">Castilla-La Mancha</option>
+                  <option value="Castilla y León">Castilla y León</option>
+                  <option value="Cataluña">Cataluña</option>
+                  <option value="Comunidad Valenciana">Comunidad Valenciana</option>
+                  <option value="Extremadura">Extremadura</option>
+                  <option value="Galicia">Galicia</option>
+                  <option value="Comunidad de Madrid">Comunidad de Madrid</option>
+                  <option value="Murcia">Murcia</option>
+                  <option value="Navarra">Navarra</option>
+                  <option value="País Vasco">País Vasco</option>
+                  <option value="La Rioja">La Rioja</option>
+                  <option value="Canarias">Canarias</option>
+                  <option value="Baleares">Baleares</option>
+                  <option value="Ceuta">Ceuta</option>
+                  <option value="Melilla">Melilla</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Line 4: Fecha de cumpleaños */}
+            <div className="grid grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="fechaCumpleanos" className="block text-sm font-medium text-slate-700 mb-1">Fecha de cumpleaños</label>
+                <input type="date" id="fechaCumpleanos" name="fechaCumpleanos" value={formData.fechaCumpleanos} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 text-slate-700 focus:border-blue-500 transition duration-150" />
+              </div>
+              <div></div>
+            </div>
+
+            {/* Line 5: Empresa and Estado */}
+            <div className="grid grid-cols-2 gap-6">
               <div className="relative">
                 <label htmlFor="empresa" className="block text-sm font-medium text-slate-700 mb-1">Empresa</label>
                 <input
@@ -297,7 +446,63 @@ const AddContactoPage = () => {
                 </select>
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* Line 6: Etiquetas */}
+            <div>
+              <label htmlFor="etiquetas" className="block text-sm font-medium text-slate-700 mb-1">Etiquetas</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  id="etiquetas"
+                  value={tagInput}
+                  onChange={handleTagInputChange}
+                  onKeyDown={handleTagKeyDown}
+                  onFocus={() => setShowTagDropdown(tagInput.length > 0)}
+                  onBlur={() => setTimeout(() => setShowTagDropdown(false), 200)}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700"
+                  placeholder="Escribe una etiqueta y presiona Enter..."
+                />
+                {showTagDropdown && (
+                  <div className="absolute z-10 w-full bg-white border border-slate-300 rounded-lg mt-1 max-h-40 overflow-y-auto shadow-lg">
+                    {etiquetas.filter(etiqueta => (tagInput === '' || etiqueta.nombre.toLowerCase().includes(tagInput.toLowerCase())) && !formData.etiquetas.includes(etiqueta.nombre)).map(etiqueta => (
+                      <div
+                        key={etiqueta.id}
+                        onClick={() => selectTag(etiqueta.nombre)}
+                        className="px-4 py-2 hover:bg-slate-100 cursor-pointer text-slate-700 flex items-center space-x-2"
+                      >
+                        <div
+                          style={{
+                            width: '5px',
+                            height: '5px',
+                            borderRadius: '50%',
+                            backgroundColor: etiqueta.color,
+                            display: 'inline-block'
+                          }}
+                        ></div>
+                        <span>{etiqueta.nombre}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {formData.etiquetas.map(tag => (
+                  <span key={tag} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="ml-1 text-blue-600 hover:text-blue-800"
+                    >
+                      <Icon icon="heroicons:x-mark" className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Line 7: Origen and Fecha de creación */}
+            <div className="grid grid-cols-2 gap-6">
               <div>
                 <label htmlFor="origen" className="block text-sm font-medium text-slate-700 mb-1">Origen</label>
                 <input type="text" id="origen" name="origen" value={formData.origen} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 text-slate-700 focus:border-blue-500 transition duration-150" placeholder="Ej. Web, Referido" />
@@ -307,57 +512,7 @@ const AddContactoPage = () => {
                 <input type="text" id="fechaCreacion" name="fechaCreacion" value={formData.fechaCreacion} readOnly className="w-full px-4 py-2 border border-slate-200 bg-slate-50 rounded-lg text-slate-500 cursor-not-allowed" />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="direccion" className="block text-sm font-medium text-slate-700 mb-1">Dirección</label>
-                <input type="text" id="direccion" name="direccion" value={formData.direccion} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 text-slate-700 focus:border-blue-500 transition duration-150" placeholder="Ej. Calle Mayor 123" />
-              </div>
-              <div>
-                <label htmlFor="localidad" className="block text-sm font-medium text-slate-700 mb-1">Localidad</label>
-                <input type="text" id="localidad" name="localidad" value={formData.localidad} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 text-slate-700 focus:border-blue-500 transition duration-150" placeholder="Ej. Madrid" />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label htmlFor="comunidad" className="block text-sm font-medium text-slate-700 mb-1">Comunidad</label>
-                <select id="comunidad" name="comunidad" value={formData.comunidad} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700">
-                  <option value="">Seleccionar</option>
-                  <option value="Andalucía">Andalucía</option>
-                  <option value="Aragón">Aragón</option>
-                  <option value="Asturias">Asturias</option>
-                  <option value="Cantabria">Cantabria</option>
-                  <option value="Castilla-La Mancha">Castilla-La Mancha</option>
-                  <option value="Castilla y León">Castilla y León</option>
-                  <option value="Cataluña">Cataluña</option>
-                  <option value="Comunidad Valenciana">Comunidad Valenciana</option>
-                  <option value="Extremadura">Extremadura</option>
-                  <option value="Galicia">Galicia</option>
-                  <option value="Comunidad de Madrid">Comunidad de Madrid</option>
-                  <option value="Murcia">Murcia</option>
-                  <option value="Navarra">Navarra</option>
-                  <option value="País Vasco">País Vasco</option>
-                  <option value="La Rioja">La Rioja</option>
-                  <option value="Canarias">Canarias</option>
-                  <option value="Baleares">Baleares</option>
-                  <option value="Ceuta">Ceuta</option>
-                  <option value="Melilla">Melilla</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="pais" className="block text-sm font-medium text-slate-700 mb-1">País</label>
-                <select id="pais" name="pais" value={formData.pais} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700">
-                  <option value="España">España</option>
-                  <option value="EEUU">EEUU</option>
-                  <option value="Francia">Francia</option>
-                  <option value="Italia">Italia</option>
-                  <option value="UK">UK</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="cp" className="block text-sm font-medium text-slate-700 mb-1">CP</label>
-                <input type="number" id="cp" name="cp" value={formData.cp} onChange={handleChange} className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 text-slate-700 focus:border-blue-500 transition duration-150" placeholder="Ej. 28001" />
-              </div>
-            </div>
+
             {message && (
               <div className={`mt-4 p-3 rounded-lg text-sm font-semibold ${message.includes('éxito') ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
                 {message}

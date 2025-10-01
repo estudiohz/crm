@@ -67,6 +67,12 @@ const Sidebar = () => {
             </Link>
           </li>
           <li className="mb-2">
+            <Link href="/etiquetas" className="flex items-center p-2 rounded hover:bg-gray-700">
+              <Icon icon="heroicons:tag" className="w-5 h-5 mr-2" />
+              Etiquetas
+            </Link>
+          </li>
+          <li className="mb-2">
             <Link href="/formularios" className="flex items-center p-2 rounded hover:bg-gray-700">
               <Icon icon="heroicons:clipboard-document-list" className="w-5 h-5 mr-2" />
               Formularios
@@ -125,6 +131,12 @@ const Sidebar = () => {
             <Link href="/empresas" className="flex items-center p-2 rounded hover:bg-gray-700">
               <Icon icon="heroicons:building-office-2" className="w-5 h-5 mr-2" />
               Empresas
+            </Link>
+          </li>
+          <li className="mb-2">
+            <Link href="/etiquetas" className="flex items-center p-2 rounded hover:bg-gray-700">
+              <Icon icon="heroicons:tag" className="w-5 h-5 mr-2" />
+              Etiquetas
             </Link>
           </li>
           <li className="mb-2">

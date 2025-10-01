@@ -303,6 +303,14 @@ const AdvancedTable = ({ headers, data, title, actionButton, editPath, pageTitle
                               })}
                             </div>
                           );
+                        } else if (typeof row[header.key] === 'string' && row[header.key].startsWith('<div')) {
+                          // Handle HTML content (like color circles)
+                          cellContent = (
+                            <span
+                              className="text-sm text-slate-700 dark:text-slate-700"
+                              dangerouslySetInnerHTML={{ __html: row[header.key] }}
+                            />
+                          );
                         } else {
                           cellContent = (
                             <span className="text-sm text-slate-700 dark:text-slate-700 ">
@@ -312,8 +320,9 @@ const AdvancedTable = ({ headers, data, title, actionButton, editPath, pageTitle
                         }
                         // Make name columns clickable
                         if (header.key === 'partner' || header.key === 'cuenta' || header.key === 'empresa' || header.key === 'nombre' || header.key === 'numeroFactura') {
+                          const shouldUnderline = header.key === 'numeroFactura' || header.key === 'nombre';
                           cellContent = (
-                            <Link href={`${editPath}/${row.id}`} className={header.key === 'numeroFactura' ? 'underline' : ''} style={header.key === 'numeroFactura' ? { textDecorationColor: '#555' } : {}}>
+                            <Link href={`${editPath}/${row.id}`} className={shouldUnderline ? 'underline' : ''} style={shouldUnderline ? { textDecorationColor: '#555' } : {}}>
                               {cellContent}
                             </Link>
                           );

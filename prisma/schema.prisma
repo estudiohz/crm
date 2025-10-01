@@ -37,6 +37,9 @@ model User {
 
   // Relación con Formulario
   formularios Formulario[]
+
+  // Relación con Etiqueta
+  etiquetas Etiqueta[]
 }
 
 model Cuenta {
@@ -95,6 +98,8 @@ model Contacto {
   comunidad String?
   pais      String?
   cp        String?
+  fechaCumpleanos DateTime?
+  etiquetas  Json?   // Array of tags as JSON
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -177,6 +182,7 @@ model Formulario {
   url       String
   email     String
   estado    String
+  etiquetas Json?    // Array of tags as JSON
   mappings  Json?    // Custom field mappings
   webhookUrl String? @unique
   webhookSecret String?
@@ -184,4 +190,15 @@ model Formulario {
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Etiqueta {
+  id          Int      @id @default(autoincrement())
+  nombre      String
+  color       String   // Hex color code
+  descripcion String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
