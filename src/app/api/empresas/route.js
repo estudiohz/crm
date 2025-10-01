@@ -40,6 +40,14 @@ export async function POST(request) {
       return NextResponse.json({ message: 'User ID required' }, { status: 400 });
     }
 
+    // Verificar si el usuario existe
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user) {
+      return NextResponse.json({ message: 'Usuario no encontrado' }, { status: 400 });
+    }
+
     // Verificar si el email ya existe
     const existingEmpresa = await prisma.empresa.findFirst({
       where: { email },

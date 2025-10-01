@@ -29,9 +29,26 @@ const AddEmpresaPage = () => {
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData);
+      // Verify user exists
+      fetch(`/api/auth/verify?userId=${parsedUser.id}`)
+        .then(response => {
+          if (response.ok) {
+            setUser(parsedUser);
+          } else {
+            // User not found, clear localStorage and redirect
+            localStorage.removeItem('user');
+            router.push('/login');
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem('user');
+          router.push('/login');
+        });
+    } else {
+      router.push('/login');
     }
-  }, []);
+  }, [router]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -76,7 +93,7 @@ const AddEmpresaPage = () => {
 
     } catch (error) {
       console.error('Error en el envío del formulario:', error);
-      setMessage('Error al añadir la empresa. Inténtalo de nuevo.');
+      setMessage(error.message || 'Error al añadir la empresa. Inténtalo de nuevo.');
       setIsSubmitting(false);
     }
   };
@@ -94,10 +111,9 @@ const AddEmpresaPage = () => {
   return (
     <DashboardLayout>
       <div className="min-h-full">
-        <div className="mb-6">
+        <div className="mb-6 flex justify-between items-center w-[90%] mx-auto">
+          <h1 className="text-xl font-bold text-slate-900">Añadir Nueva Empresa</h1>
           <BackButton />
-          <h1 className="text-3xl font-bold text-slate-900 mt-2">Añadir Nueva Empresa</h1>
-          <p className="text-slate-600">Completa la información para registrar una nueva empresa.</p>
         </div>
         <div className="bg-white p-6 rounded-lg shadow-md w-[96%] mx-auto">
           <form onSubmit={handleSubmit} className="space-y-6">
