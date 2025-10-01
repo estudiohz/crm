@@ -94,24 +94,27 @@ export async function POST(request, { params }) {
 
 
         // 4. Verificar la clave secreta (Adaptado para Elementor)
-        let providedSecret = body.webhook_secret;
+        let providedSecret = null;
 
-        // 💡 NUEVA MEJORA: Buscar la clave secreta si está bajo un nombre diferente (como "No Label webhook_secret")
+        // 💡 NUEVA MEJORA: Buscar la clave secreta, normalizando espacios y buscando la terminación.
         const secretKey = Object.keys(body).find(key => 
-            key.toLowerCase().includes('webhook_secret')
+            key.toLowerCase().trim().endsWith('webhook_secret')
         );
         
         if (secretKey) {
             providedSecret = body[secretKey];
             delete body[secretKey]; // Eliminar la clave, ya sea 'webhook_secret' o la renombrada
-            console.log(`Secret key found as: ${secretKey}`);
-        } else {
-            delete body.webhook_secret; // Asegurar que la clave estándar también se elimine si existe
+            console.log(`Secret key found and removed as: ${secretKey}`);
         }
+        
+        // 💡 DIAGNÓSTICO: Registrar para ayudar al usuario a verificar el secreto de la DB
+        const dbSecretFragment = formulario.webhookSecret.substring(0, 8) + '...';
+        const providedSecretFragment = providedSecret ? providedSecret.substring(0, 8) + '...' : 'NONE';
 
 
         if (!providedSecret || providedSecret !== formulario.webhookSecret) {
             console.warn(`Intento de acceso denegado para ID: ${connectionId}. Clave inválida.`);
+            console.warn(`[DIAGNÓSTICO] Secreto esperado (DB): ${dbSecretFragment}. Secreto recibido: ${providedSecretFragment}`);
             return NextResponse.json({ error: 'Clave secreta de webhook inválida' }, { status: 403 });
         }
         console.log('Secret verification passed');
