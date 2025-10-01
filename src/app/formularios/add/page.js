@@ -265,6 +265,7 @@ const AddFormularioPage = () => {
                       readOnly
                       className="w-full px-3 py-2 border border-green-300 rounded bg-green-50 text-green-800"
                     />
+                    <p className="text-xs text-green-600 mt-1">Añade un campo hidden en tu formulario con el id 'webhook_secret'</p>
                   </div>
                 </div>
               </div>
