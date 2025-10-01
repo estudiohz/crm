@@ -26,9 +26,10 @@ export async function POST(request, { params }) {
     console.log('Webhook received for formulario:', id, 'body:', body);
 
     // Get the formulario
-    const formularios = await prisma.$queryRaw`
-      SELECT id, nombre, url, email, estado, etiquetas, mappings, webhookUrl, webhookSecret, userId FROM "Formulario" WHERE "id" = ${parseInt(id)}
-    `;
+    const formularios = await prisma.$queryRawUnsafe(
+      'SELECT id, nombre, url, email, estado, etiquetas, mappings, webhookUrl, webhookSecret, userId FROM "Formulario" WHERE "id" = $1',
+      parseInt(id)
+    );
 
     if (!formularios || formularios.length === 0) {
       return NextResponse.json({ error: 'Formulario not found' }, { status: 404 });
@@ -82,31 +83,27 @@ export async function POST(request, { params }) {
 
     console.log('Creating contact with data:', contactData);
 
-    // Create the contact using raw SQL
-    const insertResult = await prisma.$queryRaw`
-      INSERT INTO "Contacto" ("nombre", "apellidos", "email", "telefono", "empresa", "estado", "fechaCreacion", "origen", "direccion", "localidad", "comunidad", "pais", "cp", "fechaCumpleanos", "etiquetas", "userId", "createdAt", "updatedAt")
-      VALUES (
-        ${contactData.nombre || null},
-        ${contactData.apellidos || null},
-        ${contactData.email || null},
-        ${contactData.telefono || null},
-        ${contactData.empresa || null},
-        ${contactData.estado},
-        ${contactData.fechaCreacion},
-        'Formulario',
-        ${contactData.direccion || null},
-        ${contactData.localidad || null},
-        ${contactData.comunidad || null},
-        ${contactData.pais || null},
-        ${contactData.cp || null},
-        ${contactData.fechaCumpleanos || null},
-        ${contactData.etiquetas ? JSON.stringify(contactData.etiquetas) : null}::jsonb,
-        ${contactData.userId},
-        NOW(),
-        NOW()
-      )
-      RETURNING *
-    `;
+    // Create the contact using parameterized query
+    const insertResult = await prisma.$queryRawUnsafe(
+      `INSERT INTO "Contacto" ("nombre", "apellidos", "email", "telefono", "empresa", "estado", "fechaCreacion", "origen", "direccion", "localidad", "comunidad", "pais", "cp", "fechaCumpleanos", "etiquetas", "userId", "createdAt", "updatedAt")
+      VALUES ($1, $2, $3, $4, $5, $6, $7, 'Formulario', $8, $9, $10, $11, $12, $13, $14::jsonb, $15, NOW(), NOW())
+      RETURNING *`,
+      contactData.nombre || null,
+      contactData.apellidos || null,
+      contactData.email || null,
+      contactData.telefono || null,
+      contactData.empresa || null,
+      contactData.estado,
+      contactData.fechaCreacion,
+      contactData.direccion || null,
+      contactData.localidad || null,
+      contactData.comunidad || null,
+      contactData.pais || null,
+      contactData.cp || null,
+      contactData.fechaCumpleanos || null,
+      contactData.etiquetas ? JSON.stringify(contactData.etiquetas) : null,
+      contactData.userId
+    );
 
     const newContact = insertResult[0];
 
