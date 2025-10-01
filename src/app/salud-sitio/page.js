@@ -12,6 +12,7 @@ const SaludSitioPage = () => {
   const [testForm, setTestForm] = useState({
     nombre: '',
     apellido: '',
+    email: '',
     webhookUrl: '',
     webhookSecret: '',
     selectedFormulario: ''
@@ -91,6 +92,7 @@ const SaludSitioPage = () => {
         body: new URLSearchParams({
           nombre: testForm.nombre,
           apellidos: testForm.apellido,
+          email: testForm.email,
           webhook_secret: testForm.webhookSecret
         }).toString()
       });
@@ -99,7 +101,7 @@ const SaludSitioPage = () => {
           id: prev.length + 1,
           timestamp: new Date().toISOString(),
           formularioId: 'test',
-          data: { test: true, nombre: testForm.nombre, apellidos: testForm.apellido }
+          data: { test: true, nombre: testForm.nombre, apellidos: testForm.apellido, email: testForm.email, webhook_secret: testForm.webhookSecret }
         }]);
         alert('Test enviado correctamente');
       } else {
@@ -126,6 +128,15 @@ const SaludSitioPage = () => {
         </div>
 
         <div className="space-y-6">
+          {/* API Key Section */}
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">API Key</h2>
+            <div className="p-4 bg-slate-50 rounded-lg">
+              <p className="text-sm text-slate-600 mb-2">Tu API Key para integraciones externas:</p>
+              <code className="text-sm bg-slate-200 px-2 py-1 rounded">{user?.webhookSecret}</code>
+            </div>
+          </div>
+
           {/* Webhooks Section */}
           <div className="bg-white p-6 rounded-lg shadow-md">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">Webhooks</h2>
@@ -208,7 +219,7 @@ const SaludSitioPage = () => {
                   ))}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label htmlFor="nombre" className="block text-sm font-medium text-slate-700 mb-1">Nombre</label>
                   <input
@@ -228,6 +239,18 @@ const SaludSitioPage = () => {
                     id="apellido"
                     name="apellido"
                     value={testForm.apellido}
+                    onChange={handleTestChange}
+                    required
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-700"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={testForm.email}
                     onChange={handleTestChange}
                     required
                     className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-700"
