@@ -56,6 +56,7 @@ export async function POST(request) {
         email: user.email,
         name: user.name,
         role: user.role,
+        webhookSecret: user.webhookSecret,
         cuenta: cuentaData,
         partner: partnerData,
       },

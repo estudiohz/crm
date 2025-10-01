@@ -16,7 +16,7 @@ export async function POST(request) {
     const newSecret = randomBytes(32).toString('hex');
 
     // Update the user using raw query to avoid client issues
-    await prisma.$executeRaw`UPDATE "User" SET "webhookSecret" = ${newSecret} WHERE id = ${userId}`;
+    await prisma.$executeRaw(`UPDATE "User" SET "webhookSecret" = $1 WHERE id = $2`, newSecret, userId);
 
     return NextResponse.json({ newSecret });
   } catch (error) {

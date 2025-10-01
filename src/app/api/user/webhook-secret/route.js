@@ -13,7 +13,7 @@ export async function GET(request) {
   }
 
   try {
-    const user = await prisma.$queryRaw`SELECT "webhookSecret" FROM "User" WHERE id = ${userId}`;
+    const user = await prisma.$queryRaw(`SELECT "webhookSecret" FROM "User" WHERE id = $1`, userId);
 
     if (!user || user.length === 0) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -24,7 +24,7 @@ export async function GET(request) {
     if (!webhookSecret) {
       // Generate a new secret
       webhookSecret = randomBytes(32).toString('hex');
-      await prisma.$executeRaw`UPDATE "User" SET "webhookSecret" = ${webhookSecret} WHERE id = ${userId}`;
+      await prisma.$executeRaw(`UPDATE "User" SET "webhookSecret" = $1 WHERE id = $2`, webhookSecret, userId);
     }
 
     return NextResponse.json({ webhookSecret });

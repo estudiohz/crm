@@ -8,7 +8,7 @@ export async function POST(request, { params }) {
 
   try {
     // Get the user and their webhook secret
-    const user = await prisma.$queryRaw`SELECT "webhookSecret" FROM "User" WHERE id = ${userId}`;
+    const user = await prisma.$queryRaw(`SELECT "webhookSecret" FROM "User" WHERE id = $1`, userId);
 
     if (!user || user.length === 0 || !user[0].webhookSecret) {
       return NextResponse.json({ error: 'User not found or no webhook secret' }, { status: 404 });
