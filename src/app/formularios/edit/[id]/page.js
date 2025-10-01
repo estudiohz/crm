@@ -471,7 +471,7 @@ const EditFormularioPage = () => {
                         Regenerar
                       </button>
                     </div>
-                    <p className="text-xs text-green-600 mt-1">Añade un campo hidden en tu formulario con el id 'webhook_secret'</p>
+                    <p className="text-xs text-green-600 mt-1">Añade un campo hidden en tu formulario con el id &apos;webhook_secret&apos;</p>
                   </div>
                 </div>
               </div>
