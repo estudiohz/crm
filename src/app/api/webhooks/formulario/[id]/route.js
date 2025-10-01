@@ -3,18 +3,30 @@ import { NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
 
-// Helper para parsear JSON de forma segura
-function safeJsonParse(jsonString) {
-    if (jsonString === null || jsonString === undefined || jsonString === 'null' || jsonString === '') {
+// Helper para parsear JSON de forma segura, ahora más robusto
+function safeJsonParse(data) {
+    if (data === null || data === undefined || data === 'null' || data === '') {
         return [];
     }
-    try {
-        const parsed = JSON.parse(jsonString);
-        return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-        console.warn('Error al parsear JSON de DB:', e);
-        return [];
+    
+    // 💡 MEJORA: Si el driver de Prisma ya devolvió un objeto o array, úsalo directamente.
+    if (typeof data === 'object' && data !== null) {
+        return Array.isArray(data) ? data : [];
     }
+    
+    // Si es una cadena (el caso que fallaba con 'tortuga' o '[object Object]')
+    if (typeof data === 'string') {
+        try {
+            const parsed = JSON.parse(data);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            console.warn(`Error al parsear JSON de DB: El valor recibido ('${data.substring(0, 50)}...') no es JSON válido.`, e);
+            // Si falla el parsing, devolvemos un array vacío y el proceso continúa.
+            return [];
+        }
+    }
+    
+    return [];
 }
 
 export async function POST(request, { params }) {
@@ -47,7 +59,6 @@ export async function POST(request, { params }) {
             console.log('Parsing as form-data');
             try {
                 const formData = await request.formData();
-                // 💡 MEJORA: Convertir formData a un objeto plano de forma segura
                 body = Object.fromEntries(formData.entries());
             } catch (e) {
                 console.error('Error al leer FormData:', e);
@@ -55,13 +66,11 @@ export async function POST(request, { params }) {
             }
         } else {
             console.warn('Content-Type no compatible:', contentType);
-            // Intentamos leerlo como texto genérico si falla
             const textBody = await request.text();
             console.warn('Received body as text (unsupported format):', textBody.substring(0, 100) + '...');
             return NextResponse.json({ error: 'Formato de datos no compatible (Debe ser JSON o Form-Data)' }, { status: 400 });
         }
         
-        // 🚨 Log del Body recibido 🚨
         console.log('Parsed body:', body);
         console.log('Webhook received for formulario:', connectionId, 'body keys:', Object.keys(body));
 
@@ -87,7 +96,7 @@ export async function POST(request, { params }) {
         // 4. Verificar la clave secreta
         const providedSecret = body.webhook_secret;
         if (!providedSecret || providedSecret !== formulario.webhookSecret) {
-            console.warn(`Intento de acceso denegado para ID: ${connectionId}. Clave inválida. Provided: ${providedSecret}, Expected: ${formulario.webhookSecret}`);
+            console.warn(`Intento de acceso denegado para ID: ${connectionId}. Clave inválida.`);
             return NextResponse.json({ error: 'Clave secreta de webhook inválida' }, { status: 403 });
         }
         console.log('Secret verification passed');
@@ -96,7 +105,7 @@ export async function POST(request, { params }) {
         delete body.webhook_secret; // Remover la clave secreta
         console.log('Body after removing secret:', body);
 
-        // Asumiendo que Prisma devuelve los campos JSONB como strings, los parseamos.
+        // 🚨 Llamamos a la función con el valor crudo del campo de la DB
         const mappings = safeJsonParse(formulario.mappings);
         const formularioEtiquetas = safeJsonParse(formulario.etiquetas);
         console.log('Parsed mappings count:', mappings.length);
@@ -106,7 +115,6 @@ export async function POST(request, { params }) {
         mappings.forEach(mapping => {
             if (mapping.formField in body) {
                 const rawValue = body[mapping.formField];
-                // Aseguramos que el valor final sea string (trim) o null si está vacío/nulo
                 const value = rawValue !== null && rawValue !== undefined ? rawValue.toString().trim() : '';
                 contactData[mapping.contactField] = value.length > 0 ? value : null;
                 console.log(`Mapped: ${mapping.formField} -> ${mapping.contactField} = ${contactData[mapping.contactField]}`);
@@ -128,10 +136,20 @@ export async function POST(request, { params }) {
 
 
         // 8. Crear el Contacto (Pre-validación de campo requerido)
-        if (contactData.nombre === null) {
-            console.error("Error de Validacion: El campo 'nombre' es nulo/vacío, pero la DB lo requiere.");
+        // 💡 MEJORA: Comprobamos si el campo es falsy (null, undefined, "") para atraparlo antes de Prisma.
+        if (!contactData.nombre) { 
+            console.error("Error de Validacion: El campo 'nombre' es obligatorio y no fue provisto (es null/undefined/vacío).");
             return NextResponse.json({ error: "El campo 'nombre' es obligatorio y no fue provisto." }, { status: 400 });
         }
+
+        const fechaCumpleanosValue = contactData.fechaCumpleanos 
+            ? new Date(contactData.fechaCumpleanos) 
+            : null;
+        
+        const etiquetasFinal = Array.isArray(contactData.etiquetas) 
+            ? contactData.etiquetas 
+            : [];
+
 
         const newContact = await prisma.contacto.create({
             data: {
@@ -148,8 +166,8 @@ export async function POST(request, { params }) {
                 comunidad: contactData.comunidad || null,
                 pais: contactData.pais || null,
                 cp: contactData.cp || null,
-                fechaCumpleanos: contactData.fechaCumpleanos || null,
-                etiquetas: contactData.etiquetas.length > 0 ? contactData.etiquetas : [],
+                fechaCumpleanos: fechaCumpleanosValue,
+                etiquetas: etiquetasFinal,
                 userId: contactData.userId,
             }
         });
@@ -162,7 +180,6 @@ export async function POST(request, { params }) {
         console.error('Error details:', error);
         console.error('Error stack:', error.stack);
 
-        // 🚨 Manejo de errores de Prisma 🚨
         const errorMessage = `Error en el Webhook para ID ${connectionId || 'desconocido'}:`;
         
         if (error.code) {
@@ -176,7 +193,6 @@ export async function POST(request, { params }) {
             return NextResponse.json({ error: 'Datos incompletos. Un campo obligatorio no fue provisto (NOT NULL constraint failed).' }, { status: 400 });
         }
 
-        // Si es un error interno no capturado por código específico
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
