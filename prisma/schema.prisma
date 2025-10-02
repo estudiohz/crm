@@ -186,6 +186,7 @@ model Formulario {
   mappings  Json?    // Custom field mappings
   webhookUrl String? @unique
   webhookSecret String?
+  leads     Int      @default(0) // Number of contacts created via webhook
   userId    String
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())

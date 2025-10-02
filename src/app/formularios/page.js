@@ -14,6 +14,7 @@ const formulariosHeaders = [
   { label: 'URL', key: 'url' },
   { label: 'Email', key: 'email' },
   { label: 'Estado', key: 'estado' },
+  { label: 'Leads', key: 'leads' },
 ];
 
 const FormulariosPage = () => {

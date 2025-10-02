@@ -153,6 +153,7 @@ const AddFormularioPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setIsSubmitting(true);
     setMessage('');
 
@@ -281,6 +282,12 @@ const AddFormularioPage = () => {
                   id="tagInput"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addTag(tagInput);
+                    }
+                  }}
                   onFocus={() => setShowTagDropdown(true)}
                   onBlur={() => setTimeout(() => setShowTagDropdown(false), 200)}
                   className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700"

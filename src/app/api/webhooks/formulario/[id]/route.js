@@ -219,7 +219,7 @@ export async function POST(request, { params }) {
                 empresa: contactData.empresa || null,
                 estado: contactData.estado,
                 fechaCreacion: contactData.fechaCreacion,
-                origen: 'Formulario',
+                origen: 'Formulario ' + formulario.nombre,
                 direccion: contactData.direccion || null,
                 localidad: contactData.localidad || null,
                 comunidad: contactData.comunidad || null,
@@ -231,6 +231,12 @@ export async function POST(request, { params }) {
             }
         });
         console.log('--- SUCCESS 8.3: Contacto creado con éxito! ID:', newContact.id);
+
+        // Increment leads count for the formulario
+        await prisma.formulario.update({
+            where: { id: connectionId },
+            data: { leads: { increment: 1 } }
+        });
 
         return NextResponse.json({ success: true, contactId: newContact.id }, { status: 200 });
 

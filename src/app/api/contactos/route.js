@@ -39,9 +39,7 @@ export async function GET(request) {
       return NextResponse.json([], { status: 200 });
     }
 
-    const contactos = await prisma.$queryRaw`
-      SELECT * FROM "Contacto" WHERE "userId" = ${userId}
-    `;
+const contactos = await prisma.$queryRaw`SELECT * FROM "Contacto" WHERE "userId" = ${userId}`;
 
     // Parse JSON fields
     const contactosWithParsedFields = contactos.map(contacto => {
@@ -76,24 +74,20 @@ export async function POST(request) {
 
     const lowerEmail = email.toLowerCase();
 
-    // Verificar si el email ya existe para este usuario
-    const existingContactos = await prisma.$queryRaw`
-      SELECT id, email FROM "Contacto" WHERE "email" = ${lowerEmail} AND "userId" = ${userId}
-    `;
+// Verificar si el email ya existe para este usuario
+const existingContactos = await prisma.$queryRaw`SELECT id, email FROM "Contacto" WHERE "email" = ${lowerEmail} AND "userId" = ${userId}`;
     if (existingContactos.length > 0) {
       return NextResponse.json({ message: 'El email ya está registrado para este usuario.' }, { status: 400 });
     }
 
-    // Buscar empresaId si empresa es proporcionada
-    let empresaId = null;
-    if (empresa) {
-      const empresaRecords = await prisma.$queryRaw`
-        SELECT * FROM "Empresa" WHERE "empresa" = ${empresa} AND "userId" = ${userId}
-      `;
-      if (empresaRecords.length > 0) {
-        empresaId = empresaRecords[0].id;
-      }
-    }
+// Buscar empresaId si empresa es proporcionada
+let empresaId = null;
+if (empresa) {
+const empresaRecords = await prisma.$queryRaw`SELECT * FROM "Empresa" WHERE "empresa" = ${empresa} AND "userId" = ${userId}`;
+if (empresaRecords.length > 0) {
+empresaId = empresaRecords[0].id;
+}
+}
 
     // Convertir el formato de fecha de 'DD/MM/YYYY' a 'YYYY-MM-DD' si se proporciona
     let formattedDate = new Date();
@@ -135,24 +129,20 @@ export async function PUT(request) {
     const { id, nombre, apellidos, email, telefono, empresa, estado, fechaCreacion, origen, direccion, localidad, comunidad, pais, cp, fechaCumpleanos, etiquetas, userId } = body;
     const lowerEmail = email.toLowerCase();
 
-    // Verificar si el email ya existe para este usuario (excluyendo el contacto actual)
-    const existingContactos = await prisma.$queryRaw`
-      SELECT id, email FROM "Contacto" WHERE "email" = ${lowerEmail} AND "userId" = ${userId} AND "id" != ${parseInt(id)}
-    `;
+// Verificar si el email ya existe para este usuario (excluyendo el contacto actual)
+const existingContactos = await prisma.$queryRaw`SELECT id, email FROM "Contacto" WHERE "email" = ${lowerEmail} AND "userId" = ${userId} AND "id" != ${parseInt(id)}`;
     if (existingContactos.length > 0) {
       return NextResponse.json({ message: 'El email ya está registrado para este usuario.' }, { status: 400 });
     }
 
-    // Buscar empresaId si empresa es proporcionada
-    let empresaId = null;
-    if (empresa) {
-      const empresaRecords = await prisma.$queryRaw`
-        SELECT * FROM "Empresa" WHERE "empresa" = ${empresa} AND "userId" = ${userId}
-      `;
-      if (empresaRecords.length > 0) {
-        empresaId = empresaRecords[0].id;
-      }
-    }
+// Buscar empresaId si empresa es proporcionada
+let empresaId = null;
+if (empresa) {
+const empresaRecords = await prisma.$queryRaw`SELECT * FROM "Empresa" WHERE "empresa" = ${empresa} AND "userId" = ${userId}`;
+if (empresaRecords.length > 0) {
+empresaId = empresaRecords[0].id;
+}
+}
 
     // Convertir el formato de fecha de 'DD/MM/YYYY' a 'YYYY-MM-DD'
     const [day, month, year] = fechaCreacion.split('/');
