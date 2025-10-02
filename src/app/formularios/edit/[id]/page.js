@@ -249,6 +249,7 @@ const EditFormularioPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setIsSubmitting(true);
     setMessage('');
 
@@ -274,6 +275,7 @@ const EditFormularioPage = () => {
       const updatedFormulario = await response.json();
       console.log('Formulario actualizado con éxito:', updatedFormulario);
 
+      setIsSubmitting(false);
       setMessage('¡Formulario actualizado con éxito! Redireccionando...');
       setTimeout(() => {
         router.push('/formularios');
