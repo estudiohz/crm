@@ -111,6 +111,7 @@ export async function POST(request, { params }) {
             where: { id: connectionId },
             select: {
                 id: true,
+                nombre: true,
                 webhookSecret: true,
                 mappings: true,
                 etiquetas: true,
