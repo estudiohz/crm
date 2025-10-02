@@ -14,6 +14,17 @@ const Topbar = () => {
     if (userData) {
       setUser(JSON.parse(userData));
     }
+
+    // Listen for user updates
+    const handleUserUpdate = (event) => {
+      setUser(event.detail);
+    };
+
+    window.addEventListener('userUpdated', handleUserUpdate);
+
+    return () => {
+      window.removeEventListener('userUpdated', handleUserUpdate);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -35,7 +46,7 @@ const Topbar = () => {
           <div className="flex items-center space-x-2 relative">
             <span className="w-7 h-7 rounded-full flex-none">
               <img
-                src={user.cliente?.imagen || 'https://placehold.co/50x50/3b82f6/FFFFFF?text=U'}
+                src={user.imagen || user.cuenta?.imagen || user.partner?.imagen || 'https://placehold.co/50x50/3b82f6/FFFFFF?text=U'}
                 alt={user.name}
                 className="object-cover w-full h-full rounded-full"
               />
@@ -55,9 +66,9 @@ const Topbar = () => {
                 <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                   Your Plan
                 </a>
-                <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                <Link href="/settings" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                   Setting
-                </a>
+                </Link>
                 <button onClick={handleLogout} className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                   Logout
                 </button>
