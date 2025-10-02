@@ -88,6 +88,11 @@ export async function POST(request, { params }) {
             console.warn('ERROR 2.3: Content-Type no compatible:', contentType);
             return NextResponse.json({ error: 'Formato de datos no compatible' }, { status: 400 });
         }
+
+        // Check for test mode
+        const url = new URL(request.url);
+        const mode = url.searchParams.get('mode');
+        const isTestMode = mode === 'test';
         
         // 🚨 MEJORA CRÍTICA: Normalizar claves (minúsculas y sin acentos)
         body = {};
@@ -130,8 +135,21 @@ export async function POST(request, { params }) {
         
         
         // 5. Preparar y parsear mappings y etiquetas
-        delete body.webhook_secret; 
-        delete body.webgook_secret; 
+        delete body.webhook_secret;
+        delete body.webgook_secret;
+
+        // Handle test mode
+        if (isTestMode) {
+            const payloadKeys = Object.keys(body);
+            await prisma.formularioTestPayload.create({
+                data: {
+                    formularioId: connectionId,
+                    payloadKeys: payloadKeys,
+                }
+            });
+            console.log('Test mode: Payload keys saved:', payloadKeys);
+            return NextResponse.json({ success: true, testMode: true }, { status: 200 });
+        }
 
         // 🚨 Nuevo Log para verificar datos de DB
         console.log('5.1. Raw Mappings from DB:', formulario.mappings);

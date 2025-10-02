@@ -30,6 +30,8 @@ const EditFormularioPage = () => {
   const [etiquetas, setEtiquetas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [webhookInfo, setWebhookInfo] = useState(null);
+  const [testKeys, setTestKeys] = useState([]);
+  const [isDetecting, setIsDetecting] = useState(false);
   const router = useRouter();
   const params = useParams();
   const id = params.id;
@@ -208,6 +210,43 @@ const EditFormularioPage = () => {
     }
   };
 
+  const detectTestKeys = async () => {
+    if (!webhookInfo?.url) {
+      setMessage('No hay webhook configurado.');
+      return;
+    }
+
+    setIsDetecting(true);
+    setTestKeys([]);
+    setMessage('Envía un formulario de prueba a la URL mostrada. Esperando datos...');
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/formularios/${id}/test-keys`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.payloadKeys && data.payloadKeys.length > 0) {
+            setTestKeys(data.payloadKeys);
+            setIsDetecting(false);
+            setMessage('Claves detectadas exitosamente. Ahora puedes seleccionar campos del formulario.');
+            clearInterval(pollInterval);
+          }
+        }
+      } catch (error) {
+        console.error('Error polling test keys:', error);
+      }
+    }, 3000);
+
+    // Stop polling after 2 minutes
+    setTimeout(() => {
+      if (isDetecting) {
+        setIsDetecting(false);
+        setMessage('Tiempo agotado. No se detectaron claves de prueba.');
+        clearInterval(pollInterval);
+      }
+    }, 120000);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -340,6 +379,12 @@ const EditFormularioPage = () => {
                   id="tagInput"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addTag(tagInput);
+                    }
+                  }}
                   onFocus={() => setShowTagDropdown(true)}
                   onBlur={() => setTimeout(() => setShowTagDropdown(false), 200)}
                   className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-slate-700"
@@ -388,6 +433,28 @@ const EditFormularioPage = () => {
               <h2 className="text-lg font-semibold text-slate-900 mb-2">Mapeo de Campos Personalizados</h2>
               <p className="text-sm text-slate-600 mb-4">Añade aquí cualquier campo adicional que tu formulario capture.</p>
 
+              <div className="mb-4">
+                <button
+                  type="button"
+                  onClick={detectTestKeys}
+                  disabled={isDetecting}
+                  className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 flex items-center space-x-2"
+                >
+                  <Icon icon="heroicons:magnifying-glass" className="w-5 h-5" />
+                  <span>{isDetecting ? 'Detectando...' : 'Detectar Claves de Prueba'}</span>
+                </button>
+                {isDetecting && webhookInfo && (
+                  <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      Envía un formulario de prueba a esta URL:
+                    </p>
+                    <code className="block mt-1 p-2 bg-blue-100 text-blue-900 rounded text-xs break-all">
+                      {webhookInfo.url}?mode=test
+                    </code>
+                  </div>
+                )}
+              </div>
+
               {formData.mappings.map((mapping, index) => (
                 <div key={index} className="grid grid-cols-2 gap-4 mb-4 items-end">
                   <div>
@@ -406,13 +473,26 @@ const EditFormularioPage = () => {
                   <div className="flex items-end space-x-2">
                     <div className="flex-1">
                       <label className="block text-sm font-medium text-slate-700 mb-1">Campo del Formulario</label>
-                      <input
-                        type="text"
-                        value={mapping.formField}
-                        onChange={(e) => updateMapping(index, 'formField', e.target.value)}
-                        placeholder="ID del campo en el formulario"
-                        className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-700"
-                      />
+                      {testKeys.length > 0 ? (
+                        <select
+                          value={mapping.formField}
+                          onChange={(e) => updateMapping(index, 'formField', e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-700"
+                        >
+                          <option value="">Seleccionar campo</option>
+                          {testKeys.map(key => (
+                            <option key={key} value={key}>{key}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          value={mapping.formField}
+                          onChange={(e) => updateMapping(index, 'formField', e.target.value)}
+                          placeholder="ID del campo en el formulario"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-700"
+                        />
+                      )}
                     </div>
                     <button
                       type="button"
