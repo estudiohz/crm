@@ -17,7 +17,7 @@ export async function GET(request) {
     }
 
     const formularios = await prisma.$queryRaw`
-      SELECT "id", "nombre", "url", "email", "estado", "etiquetas", "mappings", "webhookUrl", "webhookSecret", "userId", "createdAt", "updatedAt" FROM "Formulario" WHERE "userId" = ${userId}
+      SELECT "id", "nombre", "url", "email", "estado", "etiquetas", "mappings", "webhookUrl", "webhookSecret", "leads", "userId", "createdAt", "updatedAt" FROM "Formulario" WHERE "userId" = ${userId}
     `;
 
     // Parse mappings and etiquetas JSON with robust handling
