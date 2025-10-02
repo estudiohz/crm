@@ -215,6 +215,48 @@ const EditPartnerPage = () => {
     }
   };
 
+  const sendWelcomeEmail = async () => {
+    if (!formData.password) {
+      setMessage('Debe ingresar una contraseña para enviar el email de bienvenida');
+      return;
+    }
+
+    const emailSettings = localStorage.getItem('emailSettings');
+    if (!emailSettings) {
+      setMessage('Servidor no configurado');
+      return;
+    }
+
+    const settings = JSON.parse(emailSettings);
+    if (!settings.smtpHost || !settings.smtpUser || !settings.smtpPass) {
+      setMessage('Servidor no configurado');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/user/send-welcome-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          emailSettings: settings,
+          recipientEmail: formData.email,
+          userEmail: formData.email,
+          password: formData.password,
+          type: 'partner',
+        }),
+      });
+
+      if (response.ok) {
+        setMessage('Email de bienvenida enviado exitosamente');
+      } else {
+        const errorData = await response.json();
+        setMessage(errorData.message || 'Error al enviar email de bienvenida');
+      }
+    } catch (error) {
+      setMessage('Error al enviar email de bienvenida');
+    }
+  };
+
   const BackButton = () => (
     <a
       href="/partners"
@@ -407,6 +449,10 @@ const EditPartnerPage = () => {
               </div>
             )}
             <div className="flex justify-end space-x-3 pt-4">
+              <button type="button" onClick={sendWelcomeEmail} className="btn px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors duration-200 font-semibold text-sm flex items-center space-x-1">
+                <Icon icon="heroicons:envelope" className="w-4 h-4" />
+                <span>Enviar Email Bienvenida</span>
+              </button>
               <button type="button" onClick={() => setFormData(initialFormData)} className="btn px-4 py-2 border border-slate-300 text-slate-700 rounded-md hover:bg-slate-100 transition-colors duration-200 font-semibold text-sm">Cancelar</button>
               <button type="submit" disabled={isSubmitting} className="btn bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md font-semibold text-sm transition-colors duration-200 shadow-md flex items-center space-x-1 disabled:opacity-50">
                 {isSubmitting ? (<><Icon icon="heroicons:arrow-path" className="w-5 h-5 animate-spin" /><span>Guardando...</span></>) : (<><Icon icon="heroicons:check-circle" className="w-5 h-5" /><span>Guardar</span></>)}

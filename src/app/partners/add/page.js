@@ -204,6 +204,43 @@ const AddPartnerPage = () => {
     }
   };
 
+  const sendWelcomeEmail = async () => {
+    const emailSettings = localStorage.getItem('emailSettings');
+    if (!emailSettings) {
+      setMessage('Servidor no configurado');
+      return;
+    }
+
+    const settings = JSON.parse(emailSettings);
+    if (!settings.smtpHost || !settings.smtpUser || !settings.smtpPass) {
+      setMessage('Servidor no configurado');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/user/send-welcome-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          emailSettings: settings,
+          recipientEmail: formData.email,
+          userEmail: formData.email,
+          password: formData.password,
+          type: 'partner',
+        }),
+      });
+
+      if (response.ok) {
+        setMessage('Email de bienvenida enviado exitosamente');
+      } else {
+        const errorData = await response.json();
+        setMessage(errorData.message || 'Error al enviar email de bienvenida');
+      }
+    } catch (error) {
+      setMessage('Error al enviar email de bienvenida');
+    }
+  };
+
   const BackButton = () => (
     <a
       // CAMBIO CLAVE: Enlace de vuelta a la lista de Partners
@@ -390,6 +427,10 @@ const AddPartnerPage = () => {
               </div>
             )}
             <div className="flex justify-end space-x-3 pt-4">
+              <button type="button" onClick={sendWelcomeEmail} className="btn px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors duration-200 font-semibold text-sm flex items-center space-x-1">
+                <Icon icon="heroicons:envelope" className="w-4 h-4" />
+                <span>Enviar Email Bienvenida</span>
+              </button>
               <button type="button" onClick={() => {
                 setFormData(initialFormData);
                 localStorage.removeItem('partnerFormData');
