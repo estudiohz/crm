@@ -1,16 +1,23 @@
 // src/components/DashboardLayout.js
+'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 //import MainContent from './MainContent';
 
 const DashboardLayout = ({ children }) => {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-100">
-      <Sidebar />
+      <Sidebar collapsed={sidebarCollapsed} />
       <div className="flex flex-col flex-1">
-        <Topbar />
+        <Topbar onToggleSidebar={toggleSidebar} />
         <main className="flex-1 p-6 overflow-y-auto">
           {children} {/* Aquí se renderizará el contenido específico de cada página */}
         </main>

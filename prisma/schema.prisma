@@ -40,6 +40,10 @@ model User {
 
   // Relación con Etiqueta
   etiquetas Etiqueta[]
+
+  // Relación con FacebookConnection
+  facebookConnections FacebookConnection[]
+  leads               Lead[]
 }
 
 model Cuenta {
@@ -209,4 +213,51 @@ model FormularioTestPayload {
   formularioId  Int      // ID del formulario asociado (ej: 10)
   payloadKeys   Json     // Array de strings de claves detectadas (ej: ["nombre", "apellido", "email"])
   createdAt     DateTime @default(now())
+}
+
+model FacebookConnection {
+  id           Int      @id @default(autoincrement())
+  userId       String
+  facebookUserId String
+  accessToken  String
+  refreshToken String?
+  tokenExpiresAt DateTime?
+  pagesData    Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id])
+  forms        FacebookForm[]
+
+  @@map("facebook_connections")
+}
+
+model FacebookForm {
+  id           Int      @id @default(autoincrement())
+  connectionId Int
+  formId       String   // Facebook form ID
+  formName     String
+  pageId       String
+  mappedFields Json?    // Mapping to CRM fields
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  connection   FacebookConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  leads        Lead[]
+
+  @@map("facebook_forms")
+}
+
+model Lead {
+  id           Int      @id @default(autoincrement())
+  userId       String
+  formId       Int
+  leadData     Json
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id])
+  form         FacebookForm @relation(fields: [formId], references: [id])
+
+  @@map("leads")
 }

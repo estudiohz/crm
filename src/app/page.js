@@ -14,9 +14,9 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex flex-col md:flex-row">
       {/* Columna Izquierda (Formulario) */}
-      <div className="w-1/2 flex items-center justify-center bg-gray-50 p-8">
+      <div className="w-full md:w-1/2 flex items-center justify-center bg-gray-50 p-8">
         <div className="max-w-md w-full">
           <h2 className="text-center text-3xl font-bold text-gray-900 mb-6">
             {isLoginView ? 'Iniciar Sesión' : 'Registro'}
@@ -35,7 +35,7 @@ export default function Home() {
       </div>
 
       {/* Columna Derecha (Información de Prueba) */}
-      <div className="w-1/2 bg-blue-600 flex flex-col items-center justify-center p-8 text-white">
+      <div className="w-full md:w-1/2 bg-blue-600 flex flex-col items-center justify-center p-8 text-white">
         <h1 className="text-4xl font-extrabold text-center mb-6">
           Bienvenido a tu CRM
         </h1>
