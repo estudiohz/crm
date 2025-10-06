@@ -12,11 +12,17 @@ export async function GET(request) {
       return NextResponse.json({ error: 'User ID required' }, { status: 400 });
     }
 
+    const connection = await prisma.facebookConnection.findUnique({
+      where: { userId }
+    });
+
+    if (!connection) {
+      return NextResponse.json({ forms: [] });
+    }
+
     const forms = await prisma.facebookForm.findMany({
       where: {
-        connection: {
-          userId: userId
-        },
+        connectionId: connection.id,
         isActive: true
       },
       include: {
@@ -26,7 +32,17 @@ export async function GET(request) {
       }
     });
 
-    return NextResponse.json({ forms });
+    // Add page name from pagesData
+    const pagesData = connection.pagesData || [];
+    const formsWithPageName = forms.map(form => {
+      const page = pagesData.find(p => p.id === form.pageId);
+      return {
+        ...form,
+        pageName: page ? page.name : 'N/A'
+      };
+    });
+
+    return NextResponse.json({ forms: formsWithPageName });
   } catch (error) {
     console.error('Facebook saved forms get error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

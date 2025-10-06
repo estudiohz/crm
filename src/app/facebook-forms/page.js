@@ -4,7 +4,6 @@ import DashboardLayout from '../../components/DashboardLayout';
 import AdvancedTable from '../../components/AdvancedTable';
 import AddButton from '../../components/AddButton';
 import RefreshButton from '../../components/RefreshButton';
-import FacebookFormsImportModal from '../../components/FacebookFormsImportModal';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { exportToCSV } from '../../utils/csvExport';
@@ -22,7 +21,8 @@ const FacebookFormsPage = () => {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [showImportModal, setShowImportModal] = useState(false);
+  const [connection, setConnection] = useState(null);
+  const [pages, setPages] = useState([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -30,18 +30,27 @@ const FacebookFormsPage = () => {
     if (userData) {
       setUser(JSON.parse(userData));
     }
-
-    // Listen for import modal events
-    const handleOpenImportModal = () => {
-      setShowImportModal(true);
-    };
-
-    window.addEventListener('openFacebookFormsImport', handleOpenImportModal);
-
-    return () => {
-      window.removeEventListener('openFacebookFormsImport', handleOpenImportModal);
-    };
   }, []);
+
+  const fetchConnection = async () => {
+    if (!user) return;
+    try {
+      const res = await fetch(`/api/facebook/connection?userId=${user.id}`);
+      const data = await res.json();
+      setConnection(data.connection);
+      if (data.connection && data.connection.pagesData) {
+        setPages(data.connection.pagesData);
+      }
+    } catch (error) {
+      console.error("Error fetching connection:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchConnection();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -61,7 +70,7 @@ const FacebookFormsPage = () => {
         const transformedData = formsData.forms?.map(form => ({
           id: form.id,
           formName: form.formName,
-          pageName: form.page?.name || 'N/A',
+          pageName: `${form.pageName} (ID: ${form.pageId})`,
           isActive: form.isActive ? 'Activo' : 'Inactivo',
           leadsCount: form._count?.leads || 0
         })) || [];
@@ -118,7 +127,7 @@ const FacebookFormsPage = () => {
       const transformedData = exportData.forms?.map(form => ({
         id: form.id,
         formName: form.formName,
-        pageName: form.page?.name || 'N/A',
+        pageName: `${form.pageName} (ID: ${form.pageId})`,
         isActive: form.isActive ? 'Activo' : 'Inactivo',
         leadsCount: form._count?.leads || 0
       })) || [];
@@ -130,36 +139,6 @@ const FacebookFormsPage = () => {
     }
   };
 
-  const handleImportForm = async (importData) => {
-    if (!user) return;
-
-    try {
-      const response = await fetch('/api/facebook/forms', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          formId: importData.form.id,
-          formName: importData.form.name,
-          pageId: importData.page.id,
-          pageName: importData.page.name
-        }),
-      });
-
-      if (response.ok) {
-        alert('Formulario importado exitosamente');
-        setRefreshTrigger(prev => prev + 1); // Refresh the table
-      } else {
-        const errorData = await response.json();
-        alert('Error al importar formulario: ' + (errorData.error || 'Error desconocido'));
-      }
-    } catch (error) {
-      console.error('Error importing form:', error);
-      alert('Error al importar el formulario');
-    }
-  };
 
   console.log('Rendering table with headers:', facebookFormsHeaders);
   console.log('Rendering table with data:', data);
@@ -173,6 +152,20 @@ const FacebookFormsPage = () => {
           <AddButton />
         </div>
       </div>
+      {pages.length > 0 && (
+        <div className="mb-4 w-[96%] mx-auto">
+          <div className="text-gray-700 mb-2">
+            <strong>Páginas Conectadas:</strong>
+          </div>
+          <ul className="list-disc list-inside text-gray-700 space-y-1">
+            {pages.map((page) => (
+              <li key={page.id}>
+                {page.name} - ID: {page.id}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div id="main-container" className="bg-white p-6 rounded-lg shadow-md w-[96%] mx-auto">
         <AdvancedTable
           title=""
@@ -186,11 +179,6 @@ const FacebookFormsPage = () => {
         />
       </div>
 
-      <FacebookFormsImportModal
-        isOpen={showImportModal}
-        onClose={() => setShowImportModal(false)}
-        onImport={handleImportForm}
-      />
     </DashboardLayout>
   );
 };

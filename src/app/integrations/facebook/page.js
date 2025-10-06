@@ -60,8 +60,36 @@ function FacebookIntegrationContent() {
       const res = await fetch(`/api/facebook/connection?userId=${userId}`);
       const data = await res.json();
       setConnection(data.connection);
-      if (data.connection && data.connection.pagesData) {
+      if (data.connection && data.connection.pagesData && data.connection.pagesData.length > 0) {
         setPages(data.connection.pagesData);
+      } else if (data.connection && data.connection.accessToken) {
+        // Fetch pages from Facebook if not stored
+        try {
+          const pagesRes = await fetch(`https://graph.facebook.com/v20.0/me/accounts?access_token=${data.connection.accessToken}`);
+          const pagesData = await pagesRes.json();
+          if (pagesData.data) {
+            setPages(pagesData.data);
+            // Optionally update the database
+            await fetch('/api/facebook/connection', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId,
+                facebookUserId: data.connection.facebookUserId,
+                accessToken: data.connection.accessToken,
+                tokenExpiresAt: data.connection.tokenExpiresAt,
+                pagesData: pagesData.data
+              })
+            });
+          } else {
+            setPages([]);
+          }
+        } catch (pagesError) {
+          console.error("Error fetching pages from Facebook:", pagesError);
+          setPages([]);
+        }
+      } else {
+        setPages([]);
       }
       // Also fetch saved forms
       fetchSavedForms();
@@ -238,19 +266,29 @@ function FacebookIntegrationContent() {
     );
   }
 
+  console.log('Rendering integration page', {isConnected, pages});
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Integración Facebook Lead Ads</h1>
 
       <div className="mb-6">
-        <h2 className="text-lg font-semibold mb-2">Estado de Conexión</h2>
+        <h2 className="text-lg font-semibold mb-2 text-gray-500">Estado de Conexión</h2>
         {isConnected ? (
           <div className="text-green-600">
-            ✓ Conectado a Facebook
+            ✓ Conexión establecida con Facebook
           </div>
         ) : (
           <div className="text-red-600">✗ No conectado</div>
         )}
+        {isConnected && pages.length > 0 && (
+          <div className="bg-gray-100 p-4 rounded-md mt-4">
+            <div className="text-gray-700">
+              <strong>Nombre:</strong> {pages[0].name}
+            </div>
+          </div>
+        )}
+        <hr className="my-4 border-gray-300" />
         {isConnected ? (
           <div className="space-x-2">
             <button

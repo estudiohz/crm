@@ -1,14 +1,17 @@
 'use client';
 
+import DashboardLayout from '../../../components/DashboardLayout';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function FacebookFormsImportModal({ isOpen, onClose, onImport }) {
+const FacebookFormsImportPage = () => {
   const [pages, setPages] = useState([]);
   const [selectedPage, setSelectedPage] = useState('');
   const [forms, setForms] = useState([]);
   const [selectedForm, setSelectedForm] = useState('');
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
+  const router = useRouter();
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -18,10 +21,10 @@ export default function FacebookFormsImportModal({ isOpen, onClose, onImport }) 
   }, []);
 
   useEffect(() => {
-    if (isOpen && user) {
+    if (user) {
       fetchPages();
     }
-  }, [isOpen, user]);
+  }, [user]);
 
   const fetchPages = async () => {
     if (!user) return;
@@ -31,8 +34,8 @@ export default function FacebookFormsImportModal({ isOpen, onClose, onImport }) 
       const response = await fetch(`/api/facebook/connection?userId=${user.id}`);
       const data = await response.json();
 
-      if (data.pagesData) {
-        setPages(data.pagesData);
+      if (data.connection && data.connection.pagesData) {
+        setPages(data.connection.pagesData);
       }
     } catch (error) {
       console.error('Error fetching pages:', error);
@@ -70,30 +73,57 @@ export default function FacebookFormsImportModal({ isOpen, onClose, onImport }) 
     }
   };
 
-  const handleImport = () => {
-    if (selectedForm && selectedPage) {
+  const handleImport = async () => {
+    if (selectedForm && selectedPage && user) {
       const selectedFormData = forms.find(form => form.id === selectedForm);
       const selectedPageData = pages.find(page => page.id === selectedPage);
 
-      onImport({
-        form: selectedFormData,
-        page: selectedPageData
-      });
-      onClose();
+      try {
+        const response = await fetch('/api/facebook/forms', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            formId: selectedFormData.id,
+            formName: selectedFormData.name,
+            pageId: selectedPage,
+            pageName: selectedPageData.name
+          }),
+        });
+
+        if (response.ok) {
+          alert('Formulario importado exitosamente');
+          router.push('/facebook-forms');
+        } else {
+          const errorData = await response.json();
+          alert('Error al importar formulario: ' + (errorData.error || 'Error desconocido'));
+        }
+      } catch (error) {
+        console.error('Error importing form:', error);
+        alert('Error al importar el formulario');
+      }
     }
   };
 
-  if (!isOpen) return null;
+  if (!user) {
+    return (
+      <DashboardLayout>
+        <div className="text-center p-8">Cargando...</div>
+      </DashboardLayout>
+    );
+  }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-        <h2 className="text-xl font-bold mb-4">Importar Formulario de Facebook</h2>
+    <DashboardLayout>
+      <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-2xl mx-auto">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Importar Formulario de Facebook</h1>
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Seleccionar Página
+              Seleccionar Formulario
             </label>
             <select
               value={selectedPage}
@@ -103,7 +133,7 @@ export default function FacebookFormsImportModal({ isOpen, onClose, onImport }) 
               <option value="">Seleccionar página...</option>
               {pages.map((page) => (
                 <option key={page.id} value={page.id}>
-                  {page.name}
+                  {page.name} - ID: {page.id}
                 </option>
               ))}
             </select>
@@ -133,9 +163,9 @@ export default function FacebookFormsImportModal({ isOpen, onClose, onImport }) 
           )}
         </div>
 
-        <div className="flex justify-end space-x-3 mt-6">
+        <div className="flex justify-end space-x-3 mt-8">
           <button
-            onClick={onClose}
+            onClick={() => router.push('/facebook-forms')}
             className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
           >
             Cancelar
@@ -149,6 +179,8 @@ export default function FacebookFormsImportModal({ isOpen, onClose, onImport }) 
           </button>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
-}
+};
+
+export default FacebookFormsImportPage;
