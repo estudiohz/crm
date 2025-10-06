@@ -54,3 +54,24 @@ export async function GET(request) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export async function DELETE(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID required' }, { status: 400 });
+    }
+
+    // Delete the Facebook connection (this will cascade delete forms and leads)
+    await prisma.facebookConnection.delete({
+      where: { userId }
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Facebook connection delete error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

@@ -295,6 +295,55 @@ const EditCuentaPage = () => {
                 <input type="text" id="fechaAlta" name="fechaAlta" value={formData.fechaAlta} readOnly className="w-full px-4 py-2 border border-slate-200 bg-slate-50 rounded-lg text-slate-500 cursor-not-allowed" />
               </div>
             </div>
+
+            {/* Módulos Activos */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-3">Módulos Activos</label>
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="crm"
+                    name="modulo"
+                    value="CRM"
+                    checked={formData.modulo.includes('CRM')}
+                    onChange={handleCheckboxChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                  />
+                  <label htmlFor="crm" className="ml-2 block text-sm text-slate-700">
+                    CRM
+                  </label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="facturacion"
+                    name="modulo"
+                    value="Facturación"
+                    checked={formData.modulo.includes('Facturación')}
+                    onChange={handleCheckboxChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                  />
+                  <label htmlFor="facturacion" className="ml-2 block text-sm text-slate-700">
+                    Facturación
+                  </label>
+                </div>
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="calendario"
+                    name="modulo"
+                    value="Calendario"
+                    checked={formData.modulo.includes('Calendario')}
+                    onChange={handleCheckboxChange}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded"
+                  />
+                  <label htmlFor="calendario" className="ml-2 block text-sm text-slate-700">
+                    Calendario
+                  </label>
+                </div>
+              </div>
+            </div>
             {message && (
               <div className={`mt-4 p-3 rounded-lg text-sm font-semibold ${message.includes('éxito') ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
                 {message}

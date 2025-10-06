@@ -298,11 +298,12 @@ const AdvancedTable = ({ headers, data, title, actionButton, editPath, pageTitle
                             <div className="flex space-x-2">
                               {row[header.key] && row[header.key].map((mod) => {
                                 let iconName;
-                                if (mod === 'Crm') iconName = 'heroicons:clipboard-document';
-                                else if (mod === 'invoices') iconName = 'heroicons:currency-dollar';
-                                return (
+                                if (mod === 'Crm' || mod === 'CRM') iconName = 'heroicons:clipboard-document';
+                                else if (mod === 'invoices' || mod === 'Facturación') iconName = 'heroicons:currency-dollar';
+                                else if (mod === 'Calendario') iconName = 'heroicons:calendar-days';
+                                return iconName ? (
                                   <Icon key={mod} icon={iconName} className="w-5 h-5 text-slate-700" />
-                                );
+                                ) : null;
                               })}
                             </div>
                           );

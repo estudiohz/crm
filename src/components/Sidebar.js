@@ -6,21 +6,51 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Icon } from '@iconify/react';
 
-const Sidebar = ({ collapsed }) => {
+const Sidebar = ({ collapsed, onToggle }) => {
   const [user, setUser] = useState(null);
   const [modulosOpen, setModulosOpen] = useState(true);
+  const [integracionesOpen, setIntegracionesOpen] = useState(true);
   const [partnerOpen, setPartnerOpen] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    // Load collapsed state from localStorage, default to false (expanded)
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebarCollapsed');
+      return saved ? JSON.parse(saved) : false;
+    }
+    return false;
+  });
   const pathname = usePathname();
 
   const isPartnerActive = pathname.startsWith('/cuentas') || pathname.startsWith('/partners');
-  const isModulosActive = pathname.startsWith('/facturas') || pathname.startsWith('/conexion') || pathname.startsWith('/salud-sitio') || pathname.startsWith('/calendario') || pathname.startsWith('/integrations/facebook');
+  const isModulosActive = pathname.startsWith('/facturas') || pathname.startsWith('/salud-sitio') || pathname.startsWith('/calendario');
+  const isIntegracionesActive = pathname.startsWith('/conexion') || pathname.startsWith('/integrations/facebook') || pathname.startsWith('/facebook-forms') || pathname.startsWith('/formularios');
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
       setUser(JSON.parse(userData));
     }
+
+    // Listen for sidebar toggle events from Topbar
+    const handleToggleEvent = () => {
+      toggleSidebar();
+    };
+
+    window.addEventListener('toggleSidebar', handleToggleEvent);
+
+    return () => {
+      window.removeEventListener('toggleSidebar', handleToggleEvent);
+    };
   }, []);
+
+  const toggleSidebar = () => {
+    const newCollapsed = !isCollapsed;
+    setIsCollapsed(newCollapsed);
+    localStorage.setItem('sidebarCollapsed', JSON.stringify(newCollapsed));
+    if (onToggle) {
+      onToggle();
+    }
+  };
 
   const renderMenu = () => {
     if (!user) return null;
@@ -107,18 +137,6 @@ const Sidebar = ({ collapsed }) => {
                   </Link>
                 </li>
                 <li className="mb-2">
-                  <Link href="/conexion" className="flex items-center p-2 rounded hover:bg-gray-700">
-                    <Icon icon="heroicons:cloud-arrow-up" className="w-5 h-5 mr-2 text-white" />
-                    <span className="ml-2">Conexión</span>
-                  </Link>
-                </li>
-                <li className="mb-2">
-                  <Link href="/integrations/facebook" className="flex items-center p-2 rounded hover:bg-gray-700">
-                    <Icon icon="logos:facebook" className="w-5 h-5 mr-2 text-white" />
-                    <span className="ml-2">Facebook</span>
-                  </Link>
-                </li>
-                <li className="mb-2">
                   <Link href="/calendario" className="flex items-center p-2 rounded hover:bg-gray-700">
                     <Icon icon="heroicons:calendar-days" className="w-5 h-5 mr-2 text-white" />
                     <span className="ml-2">Calendario</span>
@@ -136,10 +154,49 @@ const Sidebar = ({ collapsed }) => {
                     <span className="ml-2">Calendario</span>
                   </Link>
                 </li>
+              </ul>
+            )}
+          </li>
+          <li className="mb-2">
+            <div
+              className={`flex items-center p-2 rounded hover:bg-gray-700 cursor-pointer ${isIntegracionesActive ? 'bg-gray-600' : ''} ${isCollapsed ? 'justify-center' : ''}`}
+              onClick={() => !isCollapsed && setIntegracionesOpen(!integracionesOpen)}
+            >
+              <Icon icon="heroicons:bolt" className="w-6 h-6 mr-2 text-white" />
+              {!isCollapsed && (
+                <>
+                  <span className="ml-2">Integraciones</span>
+                  <Icon
+                    icon={integracionesOpen ? "heroicons:chevron-down" : "heroicons:chevron-right"}
+                    className="w-4 h-4 ml-auto"
+                  />
+                </>
+              )}
+            </div>
+            {integracionesOpen && !isCollapsed && (
+              <ul className="ml-6 mt-2">
+                <li className="mb-2">
+                  <Link href="/conexion" className="flex items-center p-2 rounded hover:bg-gray-700">
+                    <Icon icon="heroicons:cloud-arrow-up" className="w-5 h-5 mr-2 text-white" />
+                    <span className="ml-2">Conexión</span>
+                  </Link>
+                </li>
                 <li className="mb-2">
                   <Link href="/integrations/facebook" className="flex items-center p-2 rounded hover:bg-gray-700">
-                    <Icon icon="logos:facebook" className="w-5 h-5 mr-2 text-white" />
+                    <Icon icon="heroicons:chat-bubble-left-right" className="w-5 h-5 mr-2 text-white" />
                     <span className="ml-2">Facebook</span>
+                  </Link>
+                </li>
+                <li className="mb-2">
+                  <Link href="/formularios" className="flex items-center p-2 rounded hover:bg-gray-700">
+                    <Icon icon="heroicons:clipboard-document-list" className="w-5 h-5 mr-2 text-white" />
+                    <span className="ml-2">Formularios</span>
+                  </Link>
+                </li>
+                <li className="mb-2">
+                  <Link href="/facebook-forms" className="flex items-center p-2 rounded hover:bg-gray-700">
+                    <Icon icon="heroicons:clipboard-document-list" className="w-5 h-5 mr-2 text-white" />
+                    <span className="ml-2">Formularios FB</span>
                   </Link>
                 </li>
               </ul>
@@ -180,34 +237,61 @@ const Sidebar = ({ collapsed }) => {
             </Link>
           </li>
           <li className="mb-2">
-            <Link href="/formularios" className={`flex items-center p-2 rounded hover:bg-gray-700 ${pathname.startsWith('/formularios') ? 'bg-gray-600' : ''} ${collapsed ? 'justify-center' : ''}`}>
-              <Icon icon="heroicons:clipboard-document-list" className="w-6 h-6 mr-2 text-white" />
-              {!collapsed && <span className="ml-2">Formularios</span>}
-            </Link>
-          </li>
-          <li className="mb-2">
             <Link href="/facturas" className={`flex items-center p-2 rounded hover:bg-gray-700 ${pathname.startsWith('/facturas') ? 'bg-gray-600' : ''} ${collapsed ? 'justify-center' : ''}`}>
               <Icon icon="heroicons:document-text" className="w-6 h-6 mr-2 text-white" />
               {!collapsed && <span className="ml-2">Facturas</span>}
             </Link>
           </li>
           <li className="mb-2">
-            <Link href="/conexion" className={`flex items-center p-2 rounded hover:bg-gray-700 ${pathname.startsWith('/conexion') ? 'bg-gray-600' : ''} ${collapsed ? 'justify-center' : ''}`}>
-              <Icon icon="heroicons:cloud-arrow-up" className="w-6 h-6 mr-2 text-white" />
-              {!collapsed && <span className="ml-2">Conexión</span>}
-            </Link>
-          </li>
-          <li className="mb-2">
-            <Link href="/calendario" className={`flex items-center p-2 rounded hover:bg-gray-700 ${pathname.startsWith('/calendario') ? 'bg-gray-600' : ''} ${collapsed ? 'justify-center' : ''}`}>
+            <Link href="/calendario" className={`flex items-center p-2 rounded hover:bg-gray-700 ${pathname.startsWith('/calendario') ? 'bg-gray-600' : ''} ${isCollapsed ? 'justify-center' : ''}`}>
               <Icon icon="heroicons:calendar-days" className="w-6 h-6 mr-2 text-white" />
-              {!collapsed && <span className="ml-2">Calendario</span>}
+              {!isCollapsed && <span className="ml-2">Calendario</span>}
             </Link>
           </li>
           <li className="mb-2">
-            <Link href="/integrations/facebook" className={`flex items-center p-2 rounded hover:bg-gray-700 ${pathname.startsWith('/integrations/facebook') ? 'bg-gray-600' : ''} ${collapsed ? 'justify-center' : ''}`}>
-              <Icon icon="logos:facebook" className="w-6 h-6 mr-2 text-white" />
-              {!collapsed && <span className="ml-2">Facebook</span>}
-            </Link>
+            <div
+              className={`flex items-center p-2 rounded hover:bg-gray-700 cursor-pointer ${isIntegracionesActive ? 'bg-gray-600' : ''} ${isCollapsed ? 'justify-center' : ''}`}
+              onClick={() => !isCollapsed && setIntegracionesOpen(!integracionesOpen)}
+            >
+              <Icon icon="heroicons:bolt" className="w-6 h-6 mr-2 text-white" />
+              {!isCollapsed && (
+                <>
+                  <span className="ml-2">Integraciones</span>
+                  <Icon
+                    icon={integracionesOpen ? "heroicons:chevron-down" : "heroicons:chevron-right"}
+                    className="w-4 h-4 ml-auto"
+                  />
+                </>
+              )}
+            </div>
+            {integracionesOpen && !isCollapsed && (
+              <ul className="ml-6 mt-2">
+                <li className="mb-2">
+                  <Link href="/conexion" className="flex items-center p-2 rounded hover:bg-gray-700">
+                    <Icon icon="heroicons:cloud-arrow-up" className="w-5 h-5 mr-2 text-white" />
+                    <span className="ml-2">Conexión</span>
+                  </Link>
+                </li>
+                <li className="mb-2">
+                  <Link href="/integrations/facebook" className="flex items-center p-2 rounded hover:bg-gray-700">
+                    <Icon icon="heroicons:chat-bubble-left-right" className="w-5 h-5 mr-2 text-white" />
+                    <span className="ml-2">Facebook</span>
+                  </Link>
+                </li>
+                <li className="mb-2">
+                  <Link href="/formularios" className="flex items-center p-2 rounded hover:bg-gray-700">
+                    <Icon icon="heroicons:clipboard-document-list" className="w-5 h-5 mr-2 text-white" />
+                    <span className="ml-2">Formularios</span>
+                  </Link>
+                </li>
+                <li className="mb-2">
+                  <Link href="/facebook-forms" className="flex items-center p-2 rounded hover:bg-gray-700">
+                    <Icon icon="heroicons:clipboard-document-list" className="w-5 h-5 mr-2 text-white" />
+                    <span className="ml-2">Formularios FB</span>
+                  </Link>
+                </li>
+              </ul>
+            )}
           </li>
         </ul>
       );
@@ -291,10 +375,39 @@ const Sidebar = ({ collapsed }) => {
                     <span className="ml-2">Facturación</span>
                   </Link>
                 </li>
+              </ul>
+            )}
+          </li>
+          <li className="mb-2">
+            <div
+              className={`flex items-center p-2 rounded hover:bg-gray-700 cursor-pointer ${isIntegracionesActive ? 'bg-gray-600' : ''}`}
+              onClick={() => setIntegracionesOpen(!integracionesOpen)}
+            >
+              <Icon icon="heroicons:bolt" className="w-5 h-5 mr-2" />
+              Integraciones
+              <Icon
+                icon={integracionesOpen ? "heroicons:chevron-down" : "heroicons:chevron-right"}
+                className="w-4 h-4 ml-auto"
+              />
+            </div>
+            {integracionesOpen && (
+              <ul className="ml-6 mt-2">
                 <li className="mb-2">
                   <Link href="/conexion" className="flex items-center p-2 rounded hover:bg-gray-700">
                     <Icon icon="heroicons:cloud-arrow-up" className="w-5 h-5 mr-2 text-white" />
                     <span className="ml-2">Conexión</span>
+                  </Link>
+                </li>
+                <li className="mb-2">
+                  <Link href="/integrations/facebook" className="flex items-center p-2 rounded hover:bg-gray-700">
+                    <Icon icon="logos:facebook" className="w-5 h-5 mr-2 text-white" />
+                    <span className="ml-2">Facebook</span>
+                  </Link>
+                </li>
+                <li className="mb-2">
+                  <Link href="/facebook-forms" className="flex items-center p-2 rounded hover:bg-gray-700">
+                    <Icon icon="heroicons:clipboard-document-list" className="w-5 h-5 mr-2 text-white" />
+                    <span className="ml-2">Formularios Facebook</span>
                   </Link>
                 </li>
               </ul>
@@ -307,9 +420,9 @@ const Sidebar = ({ collapsed }) => {
   };
 
   return (
-    <aside className={`${collapsed ? 'w-20' : 'w-64'} bg-[#3b497e] text-white flex-shrink-0 transition-all duration-300`}>
-      <div className={`p-4 text-center font-bold text-2xl border-b border-gray-700 ${collapsed ? 'text-sm' : ''}`}>
-        {collapsed ? 'C' : 'CRM'}
+    <aside className={`${isCollapsed ? 'w-20' : 'w-64'} bg-[#3b497e] text-white flex-shrink-0 transition-all duration-300`}>
+      <div className={`p-4 text-center font-bold text-2xl border-b border-gray-700 ${isCollapsed ? 'text-sm' : ''}`}>
+        {isCollapsed ? 'C' : 'CRM'}
       </div>
       <nav className="p-4">
         {renderMenu()}

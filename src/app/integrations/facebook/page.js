@@ -197,6 +197,37 @@ function FacebookIntegrationContent() {
     }
   };
 
+  const handleDisconnect = async () => {
+    if (!userId) {
+      alert("Usuario no autenticado");
+      return;
+    }
+
+    if (!confirm("¿Estás seguro de que quieres desconectar tu cuenta de Facebook? Se perderán todas las configuraciones de formularios.")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/facebook/connection?userId=${userId}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        setConnection(null);
+        setPages([]);
+        setForms([]);
+        setSavedForms([]);
+        setLeads([]);
+        alert("Cuenta desconectada exitosamente");
+      } else {
+        alert("Error al desconectar la cuenta");
+      }
+    } catch (error) {
+      console.error("Error disconnecting:", error);
+      alert("Error al desconectar la cuenta");
+    }
+  };
+
   const isConnected = connection && connection.accessToken;
 
   if (!user) {
@@ -220,12 +251,29 @@ function FacebookIntegrationContent() {
         ) : (
           <div className="text-red-600">✗ No conectado</div>
         )}
-        <button
-          onClick={handleConnect}
-          className="btn bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md font-semibold text-sm transition-colors duration-200 shadow-md mt-2"
-        >
-          {isConnected ? "Reconectar" : "Conectar con Facebook"}
-        </button>
+        {isConnected ? (
+          <div className="space-x-2">
+            <button
+              onClick={handleConnect}
+              className="btn bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md font-semibold text-sm transition-colors duration-200 shadow-md"
+            >
+              Reconectar
+            </button>
+            <button
+              onClick={handleDisconnect}
+              className="btn bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-md font-semibold text-sm transition-colors duration-200 shadow-md"
+            >
+              Desconectar cuenta
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleConnect}
+            className="btn bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md font-semibold text-sm transition-colors duration-200 shadow-md"
+          >
+            Conectar con Facebook
+          </button>
+        )}
       </div>
 
       {isConnected && pages.length > 0 && (

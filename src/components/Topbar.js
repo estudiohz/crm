@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
 import Link from 'next/link';
 
-const Topbar = ({ onToggleSidebar }) => {
+const Topbar = () => {
   const [user, setUser] = useState(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -36,10 +36,15 @@ const Topbar = ({ onToggleSidebar }) => {
     setDropdownOpen(!dropdownOpen);
   };
 
+  const handleToggleSidebar = () => {
+    // Dispatch custom event for sidebar toggle
+    window.dispatchEvent(new CustomEvent('toggleSidebar'));
+  };
+
   return (
     <header className="bg-white shadow p-4 flex justify-between items-center relative">
       <div className="flex items-center">
-        <button onClick={onToggleSidebar} className="p-2 rounded hover:bg-gray-100">
+        <button onClick={handleToggleSidebar} className="p-2 rounded hover:bg-gray-100">
           <Icon icon="heroicons:bars-3" className="w-6 h-6 text-gray-700" />
         </button>
       </div>

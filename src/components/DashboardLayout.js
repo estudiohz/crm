@@ -7,17 +7,11 @@ import Topbar from './Topbar';
 //import MainContent from './MainContent';
 
 const DashboardLayout = ({ children }) => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
-
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-  };
-
   return (
     <div className="flex min-h-screen bg-gray-100">
-      <Sidebar collapsed={sidebarCollapsed} />
+      <Sidebar />
       <div className="flex flex-col flex-1">
-        <Topbar onToggleSidebar={toggleSidebar} />
+        <Topbar />
         <main className="flex-1 p-6 overflow-y-auto">
           {children} {/* Aquí se renderizará el contenido específico de cada página */}
         </main>

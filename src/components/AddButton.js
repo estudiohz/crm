@@ -23,6 +23,7 @@ export default function AddButton() {
   const isEtiquetasMode = lowerPathname.includes('/etiquetas');
   const isFacturasMode = lowerPathname.includes('/facturas');
   const isFormulariosMode = lowerPathname.includes('/formularios');
+  const isFacebookFormsMode = lowerPathname.includes('/facebook-forms');
 
   // 1. Definir el texto del botón
   let buttonText = 'Añadir Cuenta';
@@ -40,6 +41,8 @@ export default function AddButton() {
     buttonText = 'Añadir Etiqueta';
   } else if (isFormulariosMode) {
     buttonText = 'Añadir Formulario';
+  } else if (isFacebookFormsMode) {
+    buttonText = 'Importar Formulario FB';
   }
 
   // 2. Definir el enlace de destino.
@@ -58,6 +61,19 @@ export default function AddButton() {
     targetLink = '/facturas/add';
   } else if (isFormulariosMode) {
     targetLink = '/formularios/add';
+  } else if (isFacebookFormsMode) {
+    // Special handling for Facebook Forms - trigger import modal
+    return (
+      <div className="flex justify-end">
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('openFacebookFormsImport'))}
+          className="px-4 py-2 text-white font-semibold rounded-lg shadow-lg hover:opacity-90 transition duration-150 ease-in-out transform hover:scale-[1.01] focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50"
+          style={{backgroundColor: '#23232b'}}
+        >
+          {buttonText}
+        </button>
+      </div>
+    );
   }
 
   return (
