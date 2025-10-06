@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 const FacebookFormsImportPage = () => {
+  console.log('FacebookFormsImportPage rendering');
   const [pages, setPages] = useState([]);
   const [selectedPage, setSelectedPage] = useState('');
   const [forms, setForms] = useState([]);
@@ -48,14 +49,21 @@ const FacebookFormsImportPage = () => {
     if (!pageId) return;
 
     const selectedPageData = pages.find(page => page.id === pageId);
-    if (!selectedPageData || !selectedPageData.access_token) return;
+    console.log('Selected page data:', selectedPageData);
+    if (!selectedPageData || !selectedPageData.access_token) {
+      console.log('No access token for page');
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log('Fetching forms for page:', pageId);
       const response = await fetch(
         `https://graph.facebook.com/v20.0/${pageId}/leadgen_forms?fields=id,name,created_time,leads_count,status&limit=100&access_token=${selectedPageData.access_token}`
       );
+      console.log('Forms response status:', response.status);
       const data = await response.json();
+      console.log('Forms data:', data);
       setForms(data.data || []);
     } catch (error) {
       console.error('Error fetching forms:', error);
@@ -139,6 +147,13 @@ const FacebookFormsImportPage = () => {
             </select>
           </div>
 
+          {selectedPage && (
+            <div className="mb-4">
+              <p className="text-gray-700">
+                <strong>Nombre de la página conectada:</strong> {pages.find(p => p.id === selectedPage)?.name || 'N/A'}
+              </p>
+            </div>
+          )}
           {selectedPage && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">

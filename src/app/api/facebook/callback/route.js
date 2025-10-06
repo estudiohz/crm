@@ -22,7 +22,7 @@ export async function GET(request) {
     }
 
     // 1. Exchange code for short-lived token
-    const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?` +
+    const tokenUrl = `https://graph.facebook.com/v20.0/oauth/access_token?` +
       `client_id=${process.env.FACEBOOK_APP_ID}` +
       `&client_secret=${process.env.FACEBOOK_APP_SECRET}` +
       `&redirect_uri=${encodeURIComponent(process.env.FACEBOOK_REDIRECT_URI)}` +
@@ -47,7 +47,7 @@ export async function GET(request) {
 
     // 2. Get long-lived token
     const longTokenResponse = await fetch(
-      `https://graph.facebook.com/v18.0/oauth/access_token?` +
+      `https://graph.facebook.com/v20.0/oauth/access_token?` +
       `grant_type=fb_exchange_token` +
       `&client_id=${process.env.FACEBOOK_APP_ID}` +
       `&client_secret=${process.env.FACEBOOK_APP_SECRET}` +
@@ -58,13 +58,13 @@ export async function GET(request) {
 
     // 3. Get Facebook user info
     const userInfoResponse = await fetch(
-      `https://graph.facebook.com/v18.0/me?access_token=${longTokenData.access_token}`
+      `https://graph.facebook.com/v20.0/me?access_token=${longTokenData.access_token}`
     );
     const fbUserInfo = await userInfoResponse.json();
 
     // 4. Get user's pages
     const pagesResponse = await fetch(
-      `https://graph.facebook.com/v18.0/me/accounts?access_token=${longTokenData.access_token}`
+      `https://graph.facebook.com/v20.0/me/accounts?fields=id,name,access_token&access_token=${longTokenData.access_token}`
     );
     const pagesData = await pagesResponse.json();
 

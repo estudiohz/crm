@@ -64,11 +64,15 @@ function FacebookIntegrationContent() {
         setPages(data.connection.pagesData);
       } else if (data.connection && data.connection.accessToken) {
         // Fetch pages from Facebook if not stored
+        console.log('Fetching pages from Facebook...');
         try {
           const pagesRes = await fetch(`https://graph.facebook.com/v20.0/me/accounts?access_token=${data.connection.accessToken}`);
+          console.log('Pages response status:', pagesRes.status);
           const pagesData = await pagesRes.json();
+          console.log('Pages data:', pagesData);
           if (pagesData.data) {
             setPages(pagesData.data);
+            console.log('Setting pages:', pagesData.data);
             // Optionally update the database
             await fetch('/api/facebook/connection', {
               method: 'POST',
@@ -82,6 +86,7 @@ function FacebookIntegrationContent() {
               })
             });
           } else {
+            console.log('No pages data');
             setPages([]);
           }
         } catch (pagesError) {
@@ -275,17 +280,30 @@ function FacebookIntegrationContent() {
       <div className="mb-6">
         <h2 className="text-lg font-semibold mb-2 text-gray-500">Estado de Conexión</h2>
         {isConnected ? (
-          <div className="text-green-600">
+          <div className="text-green-600 bg-gray-100 p-2 rounded">
             ✓ Conexión establecida con Facebook
           </div>
         ) : (
-          <div className="text-red-600">✗ No conectado</div>
+          <div className="text-red-600 bg-gray-100 p-2 rounded">✗ No conectado</div>
         )}
         {isConnected && pages.length > 0 && (
-          <div className="bg-gray-100 p-4 rounded-md mt-4">
-            <div className="text-gray-700">
-              <strong>Nombre:</strong> {pages[0].name}
-            </div>
+          <div className="mt-4">
+            <table className="min-w-full bg-white border border-gray-300 rounded-md">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">Nombre</th>
+                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pages.map((page) => (
+                  <tr key={page.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-2 text-sm text-gray-900 border-b">{page.name}</td>
+                    <td className="px-4 py-2 text-sm text-gray-900 border-b">{page.id}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
         <hr className="my-4 border-gray-300" />

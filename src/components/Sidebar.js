@@ -11,14 +11,7 @@ const Sidebar = ({ collapsed, onToggle }) => {
   const [modulosOpen, setModulosOpen] = useState(true);
   const [integracionesOpen, setIntegracionesOpen] = useState(true);
   const [partnerOpen, setPartnerOpen] = useState(true);
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    // Load collapsed state from localStorage, default to false (expanded)
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('sidebarCollapsed');
-      return saved ? JSON.parse(saved) : false;
-    }
-    return false;
-  });
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
 
   const isPartnerActive = pathname.startsWith('/cuentas') || pathname.startsWith('/partners');
@@ -29,6 +22,12 @@ const Sidebar = ({ collapsed, onToggle }) => {
     const userData = localStorage.getItem('user');
     if (userData) {
       setUser(JSON.parse(userData));
+    }
+
+    // Load collapsed state from localStorage
+    const saved = localStorage.getItem('sidebarCollapsed');
+    if (saved) {
+      setIsCollapsed(JSON.parse(saved));
     }
 
     // Listen for sidebar toggle events from Topbar
