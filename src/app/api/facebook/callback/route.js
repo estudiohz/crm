@@ -70,8 +70,17 @@ export async function GET(request) {
 
     // Save connection to database
     console.log('Facebook callback: Saving connection to database');
-    const expiresAt = new Date();
-    expiresAt.setSeconds(expiresAt.getSeconds() + longTokenData.expires_in);
+    console.log('Token expires_in:', longTokenData.expires_in);
+
+    // Calculate expiration date (Facebook returns expires_in in seconds)
+    let expiresAt = null;
+    if (longTokenData.expires_in && typeof longTokenData.expires_in === 'number') {
+      expiresAt = new Date();
+      expiresAt.setSeconds(expiresAt.getSeconds() + longTokenData.expires_in);
+      console.log('Calculated expiresAt:', expiresAt);
+    } else {
+      console.log('No expires_in provided, setting expiresAt to null');
+    }
 
     try {
       const connection = await prisma.facebookConnection.upsert({
@@ -79,14 +88,14 @@ export async function GET(request) {
         update: {
           facebookUserId: fbUserInfo.id,
           accessToken: longTokenData.access_token,
-          tokenExpiresAt: expiresAt,
+          ...(expiresAt && { tokenExpiresAt: expiresAt }),
           pagesData: pagesData.data
         },
         create: {
           userId: state,
           facebookUserId: fbUserInfo.id,
           accessToken: longTokenData.access_token,
-          tokenExpiresAt: expiresAt,
+          ...(expiresAt && { tokenExpiresAt: expiresAt }),
           pagesData: pagesData.data
         },
       });
