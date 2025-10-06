@@ -15,5 +15,6 @@ export async function GET(request) {
     `&response_type=code` +
     `&state=${userId}`;
 
-  return NextResponse.redirect(fbAuthUrl);
+  // Return the URL as JSON for popup usage
+  return NextResponse.json({ authUrl: fbAuthUrl });
 }

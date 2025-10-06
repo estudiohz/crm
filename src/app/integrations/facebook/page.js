@@ -21,6 +21,23 @@ function FacebookIntegrationContent() {
       setUser(parsedUser);
       setUserId(parsedUser.id);
     }
+
+    // Listen for messages from popup
+    const handleMessage = (event) => {
+      if (event.data && event.data.type === 'FACEBOOK_AUTH_SUCCESS') {
+        console.log('Facebook authentication successful');
+        // Refresh connection data
+        setTimeout(() => {
+          fetchConnection();
+        }, 500);
+      } else if (event.data && event.data.type === 'FACEBOOK_AUTH_ERROR') {
+        console.error('Facebook authentication failed:', event.data.error);
+        alert('Error de autenticación: ' + event.data.error);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
   }, []);
 
   useEffect(() => {
@@ -65,12 +82,49 @@ function FacebookIntegrationContent() {
   };
 
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
     if (!userId) {
       alert("Usuario no autenticado");
       return;
     }
-    window.location.href = `/api/auth/facebook/connect?userId=${userId}`;
+
+    try {
+      // Get the auth URL
+      const response = await fetch(`/api/auth/facebook/connect?userId=${userId}`);
+      const data = await response.json();
+
+      if (data.error) {
+        alert("Error: " + data.error);
+        return;
+      }
+
+      // Open Facebook auth in popup
+      const popup = window.open(
+        data.authUrl,
+        'facebook-auth',
+        'width=600,height=600,scrollbars=yes,resizable=yes'
+      );
+
+      if (!popup) {
+        alert("Popup blocked! Please allow popups for this site.");
+        return;
+      }
+
+      // Check if popup is closed and refresh data
+      const checkClosed = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(checkClosed);
+          // Refresh the connection data after popup closes
+          setTimeout(() => {
+            fetchConnection();
+          }, 1000); // Small delay to allow callback to complete
+        }
+      }, 1000);
+
+    } catch (error) {
+      console.error("Error opening Facebook auth:", error);
+      alert("Error al conectar con Facebook");
+    }
   };
 
   const fetchForms = async (pageId) => {

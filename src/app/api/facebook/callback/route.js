@@ -96,8 +96,34 @@ export async function GET(request) {
       throw dbError;
     }
 
-    console.log('Facebook callback: Redirecting to success page');
-    return NextResponse.redirect('/integrations/facebook?success=true');
+    console.log('Facebook callback: Authentication successful, closing popup');
+
+    // Return HTML that closes the popup and notifies parent
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Facebook Authentication Successful</title>
+      <script>
+        window.onload = function() {
+          // Notify parent window
+          if (window.opener) {
+            window.opener.postMessage({ type: 'FACEBOOK_AUTH_SUCCESS' }, '*');
+          }
+          // Close popup
+          window.close();
+        };
+      </script>
+    </head>
+    <body>
+      <p>Authentication successful! This window will close automatically.</p>
+    </body>
+    </html>
+    `;
+
+    return new Response(html, {
+      headers: { 'Content-Type': 'text/html' }
+    });
 
   } catch (error) {
     console.error('Error en callback de Facebook:', error);
@@ -107,6 +133,33 @@ export async function GET(request) {
     // Log additional context
     console.error('Request params:', { code: code ? 'present' : 'missing', state });
 
-    return NextResponse.redirect('/dashboard?error=connection_failed');
+    // Return error HTML for popup
+    const errorHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Facebook Authentication Failed</title>
+      <script>
+        window.onload = function() {
+          // Notify parent window of error
+          if (window.opener) {
+            window.opener.postMessage({ type: 'FACEBOOK_AUTH_ERROR', error: '${error.message}' }, '*');
+          }
+          // Close popup after a delay
+          setTimeout(() => window.close(), 3000);
+        };
+      </script>
+    </head>
+    <body>
+      <p>Authentication failed: ${error.message}</p>
+      <p>This window will close automatically in 3 seconds.</p>
+    </body>
+    </html>
+    `;
+
+    return new Response(errorHtml, {
+      status: 500,
+      headers: { 'Content-Type': 'text/html' }
+    });
   }
 }
