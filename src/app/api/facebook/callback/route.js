@@ -13,18 +13,35 @@ export async function GET(request) {
   }
 
   try {
+    console.log('Facebook callback: Starting token exchange');
+
+    // Check environment variables
+    if (!process.env.FACEBOOK_APP_ID || !process.env.FACEBOOK_APP_SECRET || !process.env.FACEBOOK_REDIRECT_URI) {
+      console.error('Facebook callback: Missing environment variables');
+      throw new Error('Missing Facebook configuration');
+    }
+
     // 1. Exchange code for short-lived token
-    const tokenResponse = await fetch(
-      `https://graph.facebook.com/v18.0/oauth/access_token?` +
+    const tokenUrl = `https://graph.facebook.com/v18.0/oauth/access_token?` +
       `client_id=${process.env.FACEBOOK_APP_ID}` +
       `&client_secret=${process.env.FACEBOOK_APP_SECRET}` +
       `&redirect_uri=${encodeURIComponent(process.env.FACEBOOK_REDIRECT_URI)}` +
-      `&code=${code}`
-    );
+      `&code=${code}`;
+
+    console.log('Facebook callback: Fetching token from:', tokenUrl.replace(/client_secret=[^&]+/, 'client_secret=***'));
+
+    const tokenResponse = await fetch(tokenUrl);
+
+    if (!tokenResponse.ok) {
+      console.error('Facebook callback: Token response not ok:', tokenResponse.status, tokenResponse.statusText);
+      throw new Error(`Token exchange failed: ${tokenResponse.status}`);
+    }
 
     const tokenData = await tokenResponse.json();
+    console.log('Facebook callback: Token data received');
 
     if (!tokenData.access_token) {
+      console.error('Facebook callback: No access_token in response:', tokenData);
       throw new Error('No se obtuvo access_token');
     }
 
@@ -52,33 +69,44 @@ export async function GET(request) {
     const pagesData = await pagesResponse.json();
 
     // Save connection to database
+    console.log('Facebook callback: Saving connection to database');
     const expiresAt = new Date();
     expiresAt.setSeconds(expiresAt.getSeconds() + longTokenData.expires_in);
 
-    const { PrismaClient } = await import('@prisma/client');
-    const prisma = new PrismaClient();
+    try {
+      const connection = await prisma.facebookConnection.upsert({
+        where: { userId: state },
+        update: {
+          facebookUserId: fbUserInfo.id,
+          accessToken: longTokenData.access_token,
+          tokenExpiresAt: expiresAt,
+          pagesData: pagesData.data
+        },
+        create: {
+          userId: state,
+          facebookUserId: fbUserInfo.id,
+          accessToken: longTokenData.access_token,
+          tokenExpiresAt: expiresAt,
+          pagesData: pagesData.data
+        },
+      });
+      console.log('Facebook callback: Connection saved successfully:', connection.id);
+    } catch (dbError) {
+      console.error('Facebook callback: Database error:', dbError);
+      throw dbError;
+    }
 
-    await prisma.facebookConnection.upsert({
-      where: { userId: state },
-      update: {
-        facebookUserId: fbUserInfo.id,
-        accessToken: longTokenData.access_token,
-        tokenExpiresAt: expiresAt,
-        pagesData: pagesData.data
-      },
-      create: {
-        userId: state,
-        facebookUserId: fbUserInfo.id,
-        accessToken: longTokenData.access_token,
-        tokenExpiresAt: expiresAt,
-        pagesData: pagesData.data
-      },
-    });
-
+    console.log('Facebook callback: Redirecting to success page');
     return NextResponse.redirect('/integrations/facebook?success=true');
 
   } catch (error) {
     console.error('Error en callback de Facebook:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error message:', error.message);
+
+    // Log additional context
+    console.error('Request params:', { code: code ? 'present' : 'missing', state });
+
     return NextResponse.redirect('/dashboard?error=connection_failed');
   }
 }

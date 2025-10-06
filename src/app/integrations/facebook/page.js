@@ -1,7 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
+import DashboardLayout from "@/components/DashboardLayout";
 
-export default function FacebookIntegration() {
+function FacebookIntegrationContent() {
   const [connection, setConnection] = useState(null);
   const [pages, setPages] = useState([]);
   const [selectedPage, setSelectedPage] = useState("");
@@ -146,17 +147,15 @@ export default function FacebookIntegration() {
 
   if (!user) {
     return (
-      <div className="p-6">
-        <div className="text-center">
-          <p>Cargando...</p>
-        </div>
+      <div className="text-center">
+        <p>Cargando...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">Integración Facebook Lead Ads</h1>
+    <div className="bg-white p-6 rounded-lg shadow-md">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Integración Facebook Lead Ads</h1>
 
       <div className="mb-6">
         <h2 className="text-lg font-semibold mb-2">Estado de Conexión</h2>
@@ -261,5 +260,13 @@ export default function FacebookIntegration() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function FacebookIntegration() {
+  return (
+    <DashboardLayout>
+      <FacebookIntegrationContent />
+    </DashboardLayout>
   );
 }
