@@ -16,7 +16,7 @@ const Sidebar = ({ collapsed, onToggle }) => {
 
   const isPartnerActive = pathname.startsWith('/cuentas') || pathname.startsWith('/partners');
   const isModulosActive = pathname.startsWith('/facturas') || pathname.startsWith('/salud-sitio') || pathname.startsWith('/calendario');
-  const isIntegracionesActive = pathname.startsWith('/conexion') || pathname.startsWith('/formularios');
+  const isIntegracionesActive = pathname.startsWith('/conexion') || pathname.startsWith('/formularios') || pathname.startsWith('/conexion-facebook') || pathname.startsWith('/formularios-facebook');
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -147,12 +147,6 @@ const Sidebar = ({ collapsed, onToggle }) => {
                     <span className="ml-2">Salud del sitio</span>
                   </Link>
                 </li>
-                <li className="mb-2">
-                  <Link href="/calendario" className="flex items-center p-2 rounded hover:bg-gray-700">
-                    <Icon icon="heroicons:calendar-days" className="w-5 h-5 mr-2 text-white" />
-                    <span className="ml-2">Calendario</span>
-                  </Link>
-                </li>
               </ul>
             )}
           </li>
@@ -178,6 +172,18 @@ const Sidebar = ({ collapsed, onToggle }) => {
                   <Link href="/conexion" className="flex items-center p-2 rounded hover:bg-gray-700">
                     <Icon icon="heroicons:cloud-arrow-up" className="w-5 h-5 mr-2 text-white" />
                     <span className="ml-2">Conexión</span>
+                  </Link>
+                </li>
+                <li className="mb-2">
+                  <Link href="/conexion-facebook" className="flex items-center p-2 rounded hover:bg-gray-700">
+                    <Icon icon="logos:facebook" className="w-5 h-5 mr-2 text-white" />
+                    <span className="ml-2">Conexión Facebook</span>
+                  </Link>
+                </li>
+                <li className="mb-2">
+                  <Link href="/formularios-facebook" className="flex items-center p-2 rounded hover:bg-gray-700">
+                    <Icon icon="heroicons:clipboard-document-list" className="w-5 h-5 mr-2 text-white" />
+                    <span className="ml-2">Formularios FB</span>
                   </Link>
                 </li>
                 <li className="mb-2">

@@ -11,7 +11,7 @@ export async function GET(request) {
   const fbAuthUrl = `https://www.facebook.com/v18.0/dialog/oauth?` +
     `client_id=${process.env.FACEBOOK_APP_ID}` +
     `&redirect_uri=${encodeURIComponent(process.env.FACEBOOK_REDIRECT_URI)}` +
-    `&scope=leads_retrieval,pages_manage_ads,pages_read_engagement` +
+    `&scope=pages_show_list,pages_manage_metadata,leads_retrieval,ads_management` +
     `&response_type=code` +
     `&state=${userId}`;
 
