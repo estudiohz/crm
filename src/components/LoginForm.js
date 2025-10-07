@@ -1,15 +1,31 @@
 // src/components/LoginForm.js
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function LoginForm() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
+  const [remember, setRemember] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Load saved data on mount
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('loginEmail');
+    const savedPassword = localStorage.getItem('loginPassword');
+    const savedRemember = localStorage.getItem('loginRemember') === 'true';
+
+    if (savedRemember) {
+      setFormData({
+        email: savedEmail || '',
+        password: savedPassword || '',
+      });
+      setRemember(true);
+    }
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -41,6 +57,18 @@ export default function LoginForm() {
       // Si el login es exitoso, guardar los datos del usuario y redirigir al dashboard
       console.log('Login successful:', data);
       localStorage.setItem('user', JSON.stringify(data.user));
+
+      // Guardar datos de login si se marca recordar
+      if (remember) {
+        localStorage.setItem('loginEmail', formData.email);
+        localStorage.setItem('loginPassword', formData.password);
+        localStorage.setItem('loginRemember', 'true');
+      } else {
+        localStorage.removeItem('loginEmail');
+        localStorage.removeItem('loginPassword');
+        localStorage.removeItem('loginRemember');
+      }
+
       window.location.href = '/dashboard'; // Redirige al dashboard
 
     } catch (err) {
@@ -85,6 +113,20 @@ export default function LoginForm() {
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-[#888]"
             placeholder="••••••••"
           />
+        </div>
+        {/* Checkbox Recordar datos */}
+        <div className="flex items-center">
+          <input
+            id="remember"
+            name="remember"
+            type="checkbox"
+            checked={remember}
+            onChange={(e) => setRemember(e.target.checked)}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+          <label htmlFor="remember" className="ml-2 block text-sm text-gray-900">
+            Recordar datos
+          </label>
         </div>
       </div>
       {error && <div className="text-red-500 text-sm text-center mt-2">{error}</div>}

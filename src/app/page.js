@@ -37,7 +37,7 @@ export default function Home() {
       {/* Columna Derecha (Información de Prueba) */}
       <div className="w-full md:w-1/2 bg-blue-600 flex flex-col items-center justify-center p-8 text-white">
         <h1 className="text-4xl font-extrabold text-center mb-6">
-          Bienvenido a tu CRM
+          Bienvenido a tu CRM 2
         </h1>
         <div className="bg-blue-700 p-6 rounded-lg shadow-lg max-w-sm w-full">
           <h3 className="text-2xl font-semibold mb-4">Usuarios de Prueba</h3>
