@@ -16,7 +16,7 @@ const Sidebar = ({ collapsed, onToggle }) => {
 
   const isPartnerActive = pathname.startsWith('/cuentas') || pathname.startsWith('/partners');
   const isModulosActive = pathname.startsWith('/facturas') || pathname.startsWith('/salud-sitio') || pathname.startsWith('/calendario');
-  const isIntegracionesActive = pathname.startsWith('/conexion') || pathname.startsWith('/integrations/facebook') || pathname.startsWith('/facebook-forms') || pathname.startsWith('/formularios');
+  const isIntegracionesActive = pathname.startsWith('/conexion') || pathname.startsWith('/formularios');
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -181,21 +181,9 @@ const Sidebar = ({ collapsed, onToggle }) => {
                   </Link>
                 </li>
                 <li className="mb-2">
-                  <Link href="/integrations/facebook" className="flex items-center p-2 rounded hover:bg-gray-700">
-                    <Icon icon="heroicons:chat-bubble-left-right" className="w-5 h-5 mr-2 text-white" />
-                    <span className="ml-2">Facebook</span>
-                  </Link>
-                </li>
-                <li className="mb-2">
                   <Link href="/formularios" className="flex items-center p-2 rounded hover:bg-gray-700">
                     <Icon icon="heroicons:clipboard-document-list" className="w-5 h-5 mr-2 text-white" />
                     <span className="ml-2">Formularios</span>
-                  </Link>
-                </li>
-                <li className="mb-2">
-                  <Link href="/facebook-forms" className="flex items-center p-2 rounded hover:bg-gray-700">
-                    <Icon icon="heroicons:clipboard-document-list" className="w-5 h-5 mr-2 text-white" />
-                    <span className="ml-2">Formularios FB</span>
                   </Link>
                 </li>
               </ul>
@@ -272,21 +260,9 @@ const Sidebar = ({ collapsed, onToggle }) => {
                   </Link>
                 </li>
                 <li className="mb-2">
-                  <Link href="/integrations/facebook" className="flex items-center p-2 rounded hover:bg-gray-700">
-                    <Icon icon="heroicons:chat-bubble-left-right" className="w-5 h-5 mr-2 text-white" />
-                    <span className="ml-2">Facebook</span>
-                  </Link>
-                </li>
-                <li className="mb-2">
                   <Link href="/formularios" className="flex items-center p-2 rounded hover:bg-gray-700">
                     <Icon icon="heroicons:clipboard-document-list" className="w-5 h-5 mr-2 text-white" />
                     <span className="ml-2">Formularios</span>
-                  </Link>
-                </li>
-                <li className="mb-2">
-                  <Link href="/facebook-forms" className="flex items-center p-2 rounded hover:bg-gray-700">
-                    <Icon icon="heroicons:clipboard-document-list" className="w-5 h-5 mr-2 text-white" />
-                    <span className="ml-2">Formularios FB</span>
                   </Link>
                 </li>
               </ul>
@@ -395,18 +371,6 @@ const Sidebar = ({ collapsed, onToggle }) => {
                   <Link href="/conexion" className="flex items-center p-2 rounded hover:bg-gray-700">
                     <Icon icon="heroicons:cloud-arrow-up" className="w-5 h-5 mr-2 text-white" />
                     <span className="ml-2">Conexión</span>
-                  </Link>
-                </li>
-                <li className="mb-2">
-                  <Link href="/integrations/facebook" className="flex items-center p-2 rounded hover:bg-gray-700">
-                    <Icon icon="logos:facebook" className="w-5 h-5 mr-2 text-white" />
-                    <span className="ml-2">Facebook</span>
-                  </Link>
-                </li>
-                <li className="mb-2">
-                  <Link href="/facebook-forms" className="flex items-center p-2 rounded hover:bg-gray-700">
-                    <Icon icon="heroicons:clipboard-document-list" className="w-5 h-5 mr-2 text-white" />
-                    <span className="ml-2">Formularios Facebook</span>
                   </Link>
                 </li>
               </ul>
