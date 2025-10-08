@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { FacebookAdsApi } from 'facebook-nodejs-business-sdk';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -24,26 +23,36 @@ export async function GET(request) {
 
     const accessToken = tokenData.access_token;
 
-    // Initialize Facebook API
-    const api = FacebookAdsApi.init(accessToken);
-
     // Get user info
-    const fbUser = new api.User('me');
-    const userInfo = await fbUser.get();
+    const userResponse = await fetch(`https://graph.facebook.com/me?fields=id,name&access_token=${accessToken}`);
+    if (!userResponse.ok) {
+      throw new Error('Failed to get user info');
+    }
+    const userInfo = await userResponse.json();
 
     // Get user pages
-    const pages = await fbUser.getAccounts();
+    const pagesResponse = await fetch(`https://graph.facebook.com/me/accounts?access_token=${accessToken}`);
+    if (!pagesResponse.ok) {
+      throw new Error('Failed to get pages');
+    }
+    const pagesData = await pagesResponse.json();
+    const pages = pagesData.data;
 
-    // For each page, get page access token
+    // For each page, get page access token using fetch
     const pagesWithTokens = await Promise.all(
       pages.map(async (page) => {
         try {
-          const pageObj = new api.Page(page.id);
-          const pageToken = await pageObj.getAccessToken();
-          return { ...page, accessToken: pageToken };
+          const tokenResponse = await fetch(`https://graph.facebook.com/${page.id}?fields=access_token&access_token=${accessToken}`);
+          if (tokenResponse.ok) {
+            const tokenData = await tokenResponse.json();
+            return { ...page, accessToken: tokenData.access_token };
+          } else {
+            console.error(`Error getting token for page ${page.id}`);
+            return { ...page, accessToken: accessToken }; // fallback
+          }
         } catch (error) {
           console.error(`Error getting token for page ${page.id}:`, error);
-          return page;
+          return { ...page, accessToken: accessToken }; // fallback
         }
       })
     );

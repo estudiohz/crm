@@ -30,7 +30,7 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 
 # Establece el puerto que la aplicación escuchará usando el formato moderno
-ENV PORT=3001
+ENV PORT=3000
 
 # Next.js requiere la DATABASE_URL en runtime.
 
@@ -40,5 +40,5 @@ COPY --from=builder /app/node_modules/ ./node_modules/
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
 
-EXPOSE 3001
+EXPOSE 3000
 CMD ["npm", "start"]
