@@ -10,7 +10,7 @@ export async function GET(request) {
   const state = searchParams.get('state'); // userId
 
   if (!code || !state) {
-    return NextResponse.json({ error: 'Missing code or state' }, { status: 400 });
+    return NextResponse.redirect(`${new URL(request.url).origin}/facebook/callback?status=error&message=Faltan%20par%C3%A1metros%3A%20code%20o%20state`);
   }
 
   try {
@@ -19,7 +19,7 @@ export async function GET(request) {
     const tokenData = await tokenResponse.json();
 
     if (tokenData.error) {
-      return NextResponse.json({ error: tokenData.error.message }, { status: 400 });
+      return NextResponse.redirect(`${new URL(request.url).origin}/facebook/callback?status=error&message=${encodeURIComponent(tokenData.error.message)}`);
     }
 
     const accessToken = tokenData.access_token;
@@ -69,10 +69,10 @@ export async function GET(request) {
       },
     });
 
-    // Return success
-    return NextResponse.json({ success: true, pages });
+    // Redirect to success page
+    return NextResponse.redirect(`${new URL(request.url).origin}/facebook/callback?status=success`);
   } catch (error) {
     console.error('Error in Facebook callback:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.redirect(`${new URL(request.url).origin}/facebook/callback?status=error&message=${encodeURIComponent(error.message)}`);
   }
 }
