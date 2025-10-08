@@ -20,7 +20,6 @@ RUN apk add --no-cache python3 make g++ && \
 COPY . .
 
 # Ejecutamos la generación de Prisma y el build de Next.js
-# Esto ya debería funcionar, pues bcrypt se instaló correctamente arriba.
 RUN npx prisma generate && npm run build
 
 
@@ -30,8 +29,8 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# Establece el puerto que la aplicación escuchará
-ENV PORT 3000
+# Establece el puerto que la aplicación escuchará usando el formato moderno
+ENV PORT=3001
 
 # Next.js requiere la DATABASE_URL en runtime.
 
@@ -41,5 +40,5 @@ COPY --from=builder /app/node_modules/ ./node_modules/
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
 
-EXPOSE 3000
+EXPOSE 3001
 CMD ["npm", "start"]
