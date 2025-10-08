@@ -1,16 +1,19 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 
-export default function FacebookCallbackPage() {
+// Componente Cliente (Usa useSearchParams)
+function CallbackContent() {
   const searchParams = useSearchParams();
   const status = searchParams.get('status');
   const message = searchParams.get('message');
 
   useEffect(() => {
+    // Si el estado es 'success', cerramos la ventana después de 3 segundos
     if (status === 'success') {
       setTimeout(() => {
+        // Esta función solo funciona porque la ventana fue abierta con window.open()
         window.close();
       }, 3000);
     }
@@ -28,16 +31,29 @@ export default function FacebookCallbackPage() {
 
   if (status === 'error') {
     return (
-      <div style={{ fontFamily: 'Arial, sans-serif', padding: '20px' }}>
-        <h1 style={{ color: 'red' }}>Error</h1>
-        <p>{message}</p>
+      <div style={{ fontFamily: 'Arial, sans-serif', padding: '20px', textAlign: 'center' }}>
+        <h1 style={{ color: 'red' }}>Error en la Conexión</h1>
+        <p>Ha ocurrido un error durante la autenticación.</p>
+        <p>Mensaje de Meta/Servidor: <strong>{message}</strong></p>
       </div>
     );
   }
 
+  // Estado de carga inicial
   return (
-    <div style={{ fontFamily: 'Arial, sans-serif', padding: '20px' }}>
-      <h1>Procesando...</h1>
+    <div style={{ fontFamily: 'Arial, sans-serif', padding: '20px', textAlign: 'center' }}>
+      <h1>Procesando Conexión...</h1>
+      <p>Espere un momento mientras verificamos los datos.</p>
     </div>
   );
+}
+
+// Componente principal de la página.
+// Usamos Suspense para evitar el error de prerendering de Next.js.
+export default function FacebookCallbackPage() {
+    return (
+        <Suspense fallback={<div>Cargando...</div>}>
+            <CallbackContent />
+        </Suspense>
+    );
 }
