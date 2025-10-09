@@ -1,17 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import DashboardLayout from '../../../components/DashboardLayout';
 
-const FacebookFormsMapPage = () => {
+const FacebookFormsMapPageContent = () => {
   const [formFields, setFormFields] = useState([]);
   const [mappings, setMappings] = useState({});
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [formData, setFormData] = useState(null);
   const [statusMessage, setStatusMessage] = useState(null); // Nuevo estado para mensajes de usuario
-  
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const formId = searchParams.get('formId');
@@ -261,6 +261,18 @@ const FacebookFormsMapPage = () => {
         </div>
       </div>
     </DashboardLayout>
+  );
+};
+
+const FacebookFormsMapPage = () => {
+  return (
+    <Suspense fallback={
+      <DashboardLayout>
+        <div className="text-center p-8 text-gray-600">Cargando...</div>
+      </DashboardLayout>
+    }>
+      <FacebookFormsMapPageContent />
+    </Suspense>
   );
 };
 
