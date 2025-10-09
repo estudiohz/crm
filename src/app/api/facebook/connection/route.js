@@ -33,7 +33,7 @@ export async function DELETE(request) {
 
   try {
     await prisma.facebookConnection.deleteMany({
-      where: { userId },
+      where: { crmUserId: userId },
     });
 
     return NextResponse.json({ success: true });

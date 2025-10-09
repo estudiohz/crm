@@ -50,7 +50,7 @@ const FacebookFormsImportPage = () => {
 
     const selectedPageData = pages.find(page => page.id === pageId);
     console.log('Selected page data:', selectedPageData);
-    if (!selectedPageData || !selectedPageData.access_token) {
+    if (!selectedPageData || !selectedPageData.accessToken) {
       console.log('No access token for page');
       return;
     }
@@ -59,7 +59,7 @@ const FacebookFormsImportPage = () => {
       setLoading(true);
       console.log('Fetching forms for page:', pageId);
       const response = await fetch(
-        `https://graph.facebook.com/v20.0/${pageId}/leadgen_forms?fields=id,name,created_time,leads_count,status&limit=100&access_token=${selectedPageData.access_token}`
+        `https://graph.facebook.com/v20.0/${pageId}/leadgen_forms?fields=id,name,created_time,leads_count,status&limit=100&access_token=${selectedPageData.accessToken}`
       );
       console.log('Forms response status:', response.status);
       const data = await response.json();
@@ -102,8 +102,8 @@ const FacebookFormsImportPage = () => {
         });
 
         if (response.ok) {
-          alert('Formulario importado exitosamente');
-          router.push('/facebook-forms');
+          const data = await response.json();
+          router.push(`/facebook-forms/map?formId=${data.formId}&fbFormId=${selectedFormData.id}`);
         } else {
           const errorData = await response.json();
           alert('Error al importar formulario: ' + (errorData.error || 'Error desconocido'));
@@ -137,6 +137,7 @@ const FacebookFormsImportPage = () => {
               value={selectedPage}
               onChange={(e) => handlePageChange(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={{color: '#555'}}
             >
               <option value="">Seleccionar página...</option>
               {pages.map((page) => (
@@ -164,6 +165,7 @@ const FacebookFormsImportPage = () => {
                 onChange={(e) => setSelectedForm(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={loading}
+                style={{color: '#555'}}
               >
                 <option value="">
                   {loading ? 'Cargando formularios...' : 'Seleccionar formulario...'}
